@@ -1,10 +1,12 @@
-function Modal({ open, onClose, title, children }) {
+function Modal({ open, onClose, title, children, size }) {
   if (!open) return null;
+
+  const sizeClass = size ? ` modal--${size}` : '';
 
   return (
     <div className="modal-overlay" onClick={onClose} role="presentation">
       <div
-        className="modal"
+        className={`modal${sizeClass}`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

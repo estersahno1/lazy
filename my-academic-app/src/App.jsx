@@ -13,6 +13,7 @@ function AppShell() {
   return (
     <div className="app-shell">
       <AppHeader />
+      <BottomNav />
       <main className="app-main">
         <Routes>
           <Route path="/" element={<DashboardPage />} />
@@ -21,7 +22,6 @@ function AppShell() {
           <Route path="/grades" element={<GradesPage />} />
         </Routes>
       </main>
-      <BottomNav />
       <Toast />
     </div>
   );

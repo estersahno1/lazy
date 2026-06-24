@@ -64,80 +64,103 @@ export function ScheduleEventForm({ initial, onSubmit, onDelete, submitLabel }) 
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <label className="form-label" htmlFor="schedule-event-title">שם השיעור / הקורס</label>
-      <CourseNameInput
-        id="schedule-event-title"
-        value={form.title}
-        onChange={(title) => setForm((p) => ({ ...p, title }))}
-        suggestions={courseNameSuggestions}
-        placeholder="שם השיעור / המשימה"
-        required
-      />
-      <p className="form-hint">אותו שם יוצע גם בעמוד הציונים — לשמירה על מזהה אחיד</p>
-      <div className="form-row">
-        <input
-          className="form-input"
-          placeholder="מיקום / חדר"
-          value={form.room}
-          onChange={(e) => setForm((p) => ({ ...p, room: e.target.value }))}
-        />
-        <input
-          className="form-input"
-          type="time"
-          value={form.time}
-          onChange={(e) => setForm((p) => ({ ...p, time: e.target.value }))}
-          required
-        />
-      </div>
-      <textarea
-        className="form-input form-input--full form-textarea"
-        placeholder="חומרי לימוד בטקסט (הפרידי בפסיקים)"
-        value={form.materialsText}
-        onChange={(e) => setForm((p) => ({ ...p, materialsText: e.target.value }))}
-        rows={2}
-      />
-      <div className="file-upload">
-        <label className="file-upload__label">
-          📎 העלאת PDF (עד 2MB, ללא מצגות)
-          <input
-            type="file"
-            accept="application/pdf,.pdf"
-            className="file-upload__input"
-            onChange={handlePdfChange}
+    <form className="modal-form modal-form--schedule" onSubmit={handleSubmit}>
+      <div className="modal-form__row modal-form__row--wide-start">
+        <div className="modal-form__field">
+          <label className="form-label" htmlFor="schedule-event-title">שם השיעור / הקורס</label>
+          <CourseNameInput
+            id="schedule-event-title"
+            value={form.title}
+            onChange={(title) => setForm((p) => ({ ...p, title }))}
+            suggestions={courseNameSuggestions}
+            placeholder="שם השיעור / המשימה"
+            required
           />
-        </label>
-        {fileError && <p className="file-upload__error">{fileError}</p>}
-        {pdfFiles.length > 0 && (
-          <ul className="file-upload__list">
-            {pdfFiles.map((pdf) => (
-              <li key={pdf.name} className="file-upload__item">
-                <span>📕 {pdf.name}</span>
-                <button type="button" onClick={() => removePdf(pdf.name)} aria-label="הסר">
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+          <p className="form-hint">אותו שם יוצע גם בעמוד הציונים — לשמירה על מזהה אחיד</p>
+        </div>
+        <div className="modal-form__field">
+          <label className="form-label" htmlFor="schedule-event-room">מיקום / חדר</label>
+          <input
+            id="schedule-event-room"
+            className="form-input form-input--full"
+            placeholder="מיקום / חדר"
+            value={form.room}
+            onChange={(e) => setForm((p) => ({ ...p, room: e.target.value }))}
+          />
+        </div>
       </div>
-      <div className="form-row">
-        <button
-          type="button"
-          className={`type-pill${form.type === 'lecture' ? ' type-pill--active' : ''}`}
-          onClick={() => setForm((p) => ({ ...p, type: 'lecture' }))}
-        >
-          הרצאה
-        </button>
-        <button
-          type="button"
-          className={`type-pill${form.type === 'exam' ? ' type-pill--active' : ''}`}
-          onClick={() => setForm((p) => ({ ...p, type: 'exam' }))}
-        >
-          מטלה / בחינה
-        </button>
+      <div className="modal-form__row modal-form__row--time-materials">
+        <div className="modal-form__field">
+          <label className="form-label" htmlFor="schedule-event-time">שעה</label>
+          <input
+            id="schedule-event-time"
+            className="form-input form-input--full"
+            type="time"
+            value={form.time}
+            onChange={(e) => setForm((p) => ({ ...p, time: e.target.value }))}
+            required
+          />
+        </div>
+        <div className="modal-form__field">
+          <label className="form-label" htmlFor="schedule-event-materials">חומרי לימוד</label>
+          <textarea
+            id="schedule-event-materials"
+            className="form-input form-input--full form-textarea"
+            placeholder="חומרי לימוד בטקסט (הפרידי בפסיקים)"
+            value={form.materialsText}
+            onChange={(e) => setForm((p) => ({ ...p, materialsText: e.target.value }))}
+            rows={2}
+          />
+        </div>
       </div>
-      <button type="submit" className="btn btn-primary" style={{ marginTop: 'var(--space-2)' }}>
+      <div className="modal-form__row modal-form__row--upload-type">
+        <div className="modal-form__field">
+          <div className="file-upload">
+            <label className="file-upload__label">
+              📎 העלאת PDF (עד 2MB, ללא מצגות)
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                className="file-upload__input"
+                onChange={handlePdfChange}
+              />
+            </label>
+            {fileError && <p className="file-upload__error">{fileError}</p>}
+            {pdfFiles.length > 0 && (
+              <ul className="file-upload__list">
+                {pdfFiles.map((pdf) => (
+                  <li key={pdf.name} className="file-upload__item">
+                    <span>📕 {pdf.name}</span>
+                    <button type="button" onClick={() => removePdf(pdf.name)} aria-label="הסר">
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+        <div className="modal-form__field">
+          <span className="form-label">סוג אירוע</span>
+          <div className="modal-form__type-pills">
+            <button
+              type="button"
+              className={`type-pill${form.type === 'lecture' ? ' type-pill--active' : ''}`}
+              onClick={() => setForm((p) => ({ ...p, type: 'lecture' }))}
+            >
+              הרצאה
+            </button>
+            <button
+              type="button"
+              className={`type-pill${form.type === 'exam' ? ' type-pill--active' : ''}`}
+              onClick={() => setForm((p) => ({ ...p, type: 'exam' }))}
+            >
+              מטלה / בחינה
+            </button>
+          </div>
+        </div>
+      </div>
+      <button type="submit" className="btn btn-primary modal-form__submit">
         {submitLabel}
       </button>
       {onDelete && (
@@ -176,37 +199,45 @@ function ProfileEditModal() {
   };
 
   return (
-    <Modal open={showProfileEdit} onClose={() => setShowProfileEdit(false)} title="עריכת פרופיל">
-      <form onSubmit={handleSubmit}>
-        <label className="form-label" htmlFor="profile-name">שם מלא</label>
-        <input
-          id="profile-name"
-          className="form-input form-input--full"
-          placeholder="שם מלא"
-          value={form.name}
-          onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-          required
-        />
-        <label className="form-label" htmlFor="profile-email">אימייל</label>
-        <input
-          id="profile-email"
-          className="form-input form-input--full"
-          type="email"
-          placeholder="אימייל"
-          value={form.email}
-          onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-          required
-        />
-        <label className="form-label" htmlFor="profile-institution">מוסד לימודים</label>
-        <input
-          id="profile-institution"
-          className="form-input form-input--full"
-          placeholder="מוסד לימודים"
-          value={form.institution}
-          onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))}
-          required
-        />
-        <button type="submit" className="btn btn-primary">
+    <Modal open={showProfileEdit} onClose={() => setShowProfileEdit(false)} title="עריכת פרופיל" size="form">
+      <form className="modal-form modal-form--profile" onSubmit={handleSubmit}>
+        <div className="modal-form__row">
+          <div className="modal-form__field">
+            <label className="form-label" htmlFor="profile-name">שם מלא</label>
+            <input
+              id="profile-name"
+              className="form-input form-input--full"
+              placeholder="שם מלא"
+              value={form.name}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              required
+            />
+          </div>
+          <div className="modal-form__field">
+            <label className="form-label" htmlFor="profile-email">אימייל</label>
+            <input
+              id="profile-email"
+              className="form-input form-input--full"
+              type="email"
+              placeholder="אימייל"
+              value={form.email}
+              onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+              required
+            />
+          </div>
+        </div>
+        <div className="modal-form__field modal-form__field--half">
+          <label className="form-label" htmlFor="profile-institution">מוסד לימודים</label>
+          <input
+            id="profile-institution"
+            className="form-input form-input--full"
+            placeholder="מוסד לימודים"
+            value={form.institution}
+            onChange={(e) => setForm((p) => ({ ...p, institution: e.target.value }))}
+            required
+          />
+        </div>
+        <button type="submit" className="btn btn-primary modal-form__submit">
           שמור פרופיל
         </button>
         <button type="button" className="btn btn-danger-outline" onClick={handleDeleteAccount}>

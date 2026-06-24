@@ -502,12 +502,14 @@ function TaskManagerPage() {
   };
 
   return (
-    <>
+    <div className="page page--tasks">
       <div className="tasks-page-header">
-        <h1 className="page-title">מפרק המשימות</h1>
-        <p className="page-subtitle">
-          הבינה המלאכותית פירקה את המטלה שלך לצעדים ברי ביצוע.
-        </p>
+        <div className="tasks-page-header__text">
+          <h1 className="page-title">מפרק המשימות</h1>
+          <p className="page-subtitle">
+            הבינה המלאכותית פירקה את המטלה שלך לצעדים ברי ביצוע.
+          </p>
+        </div>
         <button
           type="button"
           className="btn btn-primary btn--new-task"
@@ -518,7 +520,7 @@ function TaskManagerPage() {
       </div>
 
       {aiTasks.length > 0 ? (
-        <>
+        <div className="page__carousel">
           <div
             ref={carouselRef}
             className="ai-carousel-wrap"
@@ -584,9 +586,9 @@ function TaskManagerPage() {
               <span className="ai-carousel__dot ai-carousel__dot--active" />
             </div>
           )}
-        </>
+        </div>
       ) : (
-        <p className="page-subtitle">אין משימות AI — לחצי + משימה חדשה</p>
+        <p className="page-subtitle page__empty">אין משימות AI — לחצי + משימה חדשה</p>
       )}
 
       <div className="tip-box">
@@ -601,106 +603,132 @@ function TaskManagerPage() {
           resetTaskModal();
         }}
         title="משימה חדשה לפירוק"
+        size="wide"
       >
-        <form onSubmit={handleCreateTask}>
-          <input
-            className="form-input form-input--full"
-            placeholder="שם המשימה / העבודה"
-            value={taskForm.title}
-            onChange={(e) => setTaskForm((p) => ({ ...p, title: e.target.value }))}
-            required
-          />
-          <label className="form-label" htmlFor="task-course">קורס משויך (אופציונלי)</label>
-          <CourseNameInput
-            id="task-course"
-            value={taskForm.courseName}
-            onChange={(courseName) => setTaskForm((p) => ({ ...p, courseName }))}
-            suggestions={gradeCourseNames}
-            placeholder="בחרי מהרשימה או הקלידי שם קורס"
-          />
-          <p className="form-hint">
-            אפשר לבחור קורס מהציונים או להקליד שם קורס שעדיין לא הוספת
-          </p>
-          <input
-            className="form-input form-input--full"
-            type="date"
-            value={taskForm.deadline}
-            onChange={(e) => setTaskForm((p) => ({ ...p, deadline: e.target.value }))}
-            required
-          />
-          <label className="form-label" htmlFor="task-deadline-time">
-            שעת הגשה
-          </label>
-          <input
-            id="task-deadline-time"
-            className="form-input form-input--full"
-            type="time"
-            value={taskForm.deadlineTime}
-            onChange={(e) => setTaskForm((p) => ({ ...p, deadlineTime: e.target.value }))}
-            required
-          />
-          {taskForm.deadline && weeksLeft > 0 && (
-            <WeekPlannerGrid
-              totalWeeks={weeksLeft}
-              selectedWeeks={selectedWeekIndices}
-              onChange={setSelectedWeekIndices}
-              deadlineLabel={deadlinePlannerLabel}
-            />
-          )}
-          <div className="form-field">
-            <label className="form-label" htmlFor="task-hours">שעות בשבוע</label>
-            <input
-              id="task-hours"
-              className="form-input form-input--full"
-              type="number"
-              min="1"
-              max="30"
-              value={taskForm.hoursPerWeek}
-              onChange={(e) => setTaskForm((p) => ({ ...p, hoursPerWeek: e.target.value }))}
-              required
-            />
-            <p className="form-hint">כמה שעות בשבוע תקדישי לעבודה על המשימה</p>
-          </div>
-          <textarea
-            className="form-input form-input--full form-textarea"
-            placeholder="תיאור המשימה / הדביקי כאן את נוסח המטלה"
-            value={taskForm.description}
-            onChange={handleDescriptionChange}
-            rows={fromDocument ? 8 : 4}
-          />
-          <div className="file-upload">
-            <input
-              ref={taskFileInputRef}
-              type="file"
-              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-              className="file-upload__input"
-              onChange={handleTaskFile}
-              tabIndex={-1}
-              aria-hidden="true"
-            />
-            <button
-              type="button"
-              className="file-upload__label file-upload__trigger"
-              disabled={fileLoading}
-              onClick={() => taskFileInputRef.current?.click()}
-            >
-              {fileLoading ? 'קורא קובץ...' : '📎 העלאת קובץ (Word, PDF או TXT, עד 2MB)'}
-            </button>
-            {fileError && <p className="file-upload__error">{fileError}</p>}
-            {taskFileName && (
-              <p className="file-upload__ok">
-                ✓ {taskFileName}
-                {aiParsed && parsedPreview.length > 0
-                  ? ` — פורקו ${parsedPreview.length} שלבים`
-                  : fromDocument
-                    ? ' — הקובץ נקרא, ממתין לפירוק'
-                    : ''}
+        <form className="modal-form modal-form--task" onSubmit={handleCreateTask}>
+          <div className="modal-form__row modal-form__row--wide-start">
+            <div className="modal-form__field">
+              <label className="form-label" htmlFor="task-title">שם המשימה / העבודה</label>
+              <input
+                id="task-title"
+                className="form-input form-input--full"
+                placeholder="שם המשימה / העבודה"
+                value={taskForm.title}
+                onChange={(e) => setTaskForm((p) => ({ ...p, title: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="modal-form__field">
+              <label className="form-label" htmlFor="task-course">קורס משויך (אופציונלי)</label>
+              <CourseNameInput
+                id="task-course"
+                value={taskForm.courseName}
+                onChange={(courseName) => setTaskForm((p) => ({ ...p, courseName }))}
+                suggestions={gradeCourseNames}
+                placeholder="בחרי מהרשימה או הקלידי שם קורס"
+              />
+              <p className="form-hint">
+                אפשר לבחור קורס מהציונים או להקליד שם קורס שעדיין לא הוספת
               </p>
-            )}
+            </div>
+          </div>
+          <div className="modal-form__row">
+            <div className="modal-form__field">
+              <label className="form-label" htmlFor="task-deadline">תאריך יעד</label>
+              <input
+                id="task-deadline"
+                className="form-input form-input--full"
+                type="date"
+                value={taskForm.deadline}
+                onChange={(e) => setTaskForm((p) => ({ ...p, deadline: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="modal-form__field">
+              <label className="form-label" htmlFor="task-deadline-time">שעת הגשה</label>
+              <input
+                id="task-deadline-time"
+                className="form-input form-input--full"
+                type="time"
+                value={taskForm.deadlineTime}
+                onChange={(e) => setTaskForm((p) => ({ ...p, deadlineTime: e.target.value }))}
+                required
+              />
+            </div>
+          </div>
+          {taskForm.deadline && weeksLeft > 0 && (
+            <div className="modal-form__field modal-form__field--full">
+              <WeekPlannerGrid
+                totalWeeks={weeksLeft}
+                selectedWeeks={selectedWeekIndices}
+                onChange={setSelectedWeekIndices}
+                deadlineLabel={deadlinePlannerLabel}
+              />
+            </div>
+          )}
+          <div className="modal-form__row modal-form__row--hours-upload">
+            <div className="modal-form__field">
+              <label className="form-label" htmlFor="task-hours">שעות בשבוע</label>
+              <input
+                id="task-hours"
+                className="form-input form-input--full"
+                type="number"
+                min="1"
+                max="30"
+                value={taskForm.hoursPerWeek}
+                onChange={(e) => setTaskForm((p) => ({ ...p, hoursPerWeek: e.target.value }))}
+                required
+              />
+              <p className="form-hint">כמה שעות בשבוע תקדישי לעבודה על המשימה</p>
+            </div>
+            <div className="modal-form__field">
+              <span className="form-label">קובץ מטלה (אופציונלי)</span>
+              <div className="file-upload">
+                <input
+                  ref={taskFileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                  className="file-upload__input"
+                  onChange={handleTaskFile}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                />
+                <button
+                  type="button"
+                  className="file-upload__label file-upload__trigger"
+                  disabled={fileLoading}
+                  onClick={() => taskFileInputRef.current?.click()}
+                >
+                  {fileLoading ? 'קורא קובץ...' : '📎 העלאת קובץ (Word, PDF או TXT, עד 2MB)'}
+                </button>
+                {fileError && <p className="file-upload__error">{fileError}</p>}
+                {taskFileName && (
+                  <p className="file-upload__ok">
+                    ✓ {taskFileName}
+                    {aiParsed && parsedPreview.length > 0
+                      ? ` — פורקו ${parsedPreview.length} שלבים`
+                      : fromDocument
+                        ? ' — הקובץ נקרא, ממתין לפירוק'
+                        : ''}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="modal-form__field modal-form__field--full">
+            <label className="form-label" htmlFor="task-description">תיאור המשימה</label>
+            <textarea
+              id="task-description"
+              className="form-input form-input--full form-textarea"
+              placeholder="תיאור המשימה / הדביקי כאן את נוסח המטלה"
+              value={taskForm.description}
+              onChange={handleDescriptionChange}
+              rows={fromDocument ? 6 : 3}
+            />
           </div>
 
           {fromDocument && (
-            <div className="split-mode">
+            <div className="modal-form__field modal-form__field--full split-mode">
               <p className="form-label">איך לפרק את המטלה?</p>
               <div className="split-mode__choices" role="radiogroup" aria-label="אופן פירוק המטלה">
                 <label className="split-mode__option">
@@ -769,7 +797,7 @@ function TaskManagerPage() {
           )}
 
           {(fromDocument || parsedPreview.length > 0) && (
-            <div className="parse-preview">
+            <div className="modal-form__field modal-form__field--full parse-preview">
               <div className="parse-preview__header">
                 <p className="form-label">
                   {splitBuildMode === SPLIT_BUILD_MODES.manual
@@ -831,16 +859,16 @@ function TaskManagerPage() {
           )}
 
           {!fromDocument && !taskFileName && (
-            <p className="form-hint">
+            <p className="form-hint modal-form__field--full">
               בלי קובץ — המערכת תציע חלוקה כללית. להתאמה למטלה, העלי קובץ Word/PDF עם רשימת משימות.
             </p>
           )}
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="btn btn-primary modal-form__submit">
             פרק לי את המשימה
           </button>
         </form>
       </Modal>
-    </>
+    </div>
   );
 }
 

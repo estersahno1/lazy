@@ -11,6 +11,7 @@ import {
   offsetAcademicDays,
   todayLocalDate,
   getDayIndexForScheduleDate,
+  getWeekOffsetForDate,
   shouldScheduleSubtaskOnCalendar,
   weeksUntilDeadline,
   durationToHeight,
@@ -33,7 +34,7 @@ import {
   mergeNotificationReadState,
 } from '../utils/notificationUtils';
 import {
-  seedDemoStudentIfEmpty,
+  ensureDemoStudentAccount,
   getSessionStudentId,
   getStudentById,
   loginStudent,
@@ -42,6 +43,11 @@ import {
   updateStudentRecord,
   deleteStudentAccount,
 } from '../utils/authUtils';
+import {
+  isDemoUser,
+  needsDemoSeedRefresh,
+  buildDemoAppState,
+} from '../utils/demoSeed';
 import { normalizeCourse, coursesForUser, semesterVariant } from '../utils/courseUtils';
 import { collectCourseNames, normalizeCourseName, getGradeCourseNames } from '../utils/courseNameUtils';
 import { normalizeUrgentTask } from '../utils/urgentTaskUtils';
@@ -451,28 +457,58 @@ function parseStoredAppData(parsed, userId) {
   };
 }
 
-function loadStateForStudent(studentId) {
+function resolveDemoSeedState(studentId, email) {
+  if (!isDemoUser(email)) return null;
+  return buildDemoAppState(studentId);
+}
+
+function loadStateForStudent(studentId, studentEmail) {
+  const email =
+    studentEmail ?? getStudentById(studentId)?.email ?? '';
+
   try {
     const raw = localStorage.getItem(studentStorageKey(studentId));
     if (raw) {
+      const parsed = JSON.parse(raw);
+      if (isDemoUser(email) && needsDemoSeedRefresh(parsed)) {
+        const demoState = resolveDemoSeedState(studentId, email);
+        return applyAiTasksReconciliation(
+          parseStoredAppData(demoState, studentId)
+        );
+      }
       return applyAiTasksReconciliation(
-        parseStoredAppData(JSON.parse(raw), studentId)
+        parseStoredAppData(parsed, studentId)
       );
     }
     const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
     if (legacy && Number(studentId) === 1) {
+      const parsed = JSON.parse(legacy);
+      if (isDemoUser(email) && needsDemoSeedRefresh(parsed)) {
+        const demoState = resolveDemoSeedState(studentId, email);
+        return applyAiTasksReconciliation(
+          parseStoredAppData(demoState, studentId)
+        );
+      }
       return applyAiTasksReconciliation(
-        parseStoredAppData(JSON.parse(legacy), studentId)
+        parseStoredAppData(parsed, studentId)
       );
     }
   } catch {
     /* ignore */
   }
+
+  if (isDemoUser(email)) {
+    const demoState = resolveDemoSeedState(studentId, email);
+    return applyAiTasksReconciliation(
+      parseStoredAppData(demoState, studentId)
+    );
+  }
+
   return createFreshAppState();
 }
 
 function initSession() {
-  seedDemoStudentIfEmpty();
+  ensureDemoStudentAccount();
   const sessionId = getSessionStudentId();
   if (!sessionId) {
     return { student: null, appState: createFreshAppState() };
@@ -484,7 +520,7 @@ function initSession() {
   }
   return {
     student,
-    appState: loadStateForStudent(student.id),
+    appState: loadStateForStudent(student.id, student.email),
   };
 }
 
@@ -656,7 +692,7 @@ export function AppProvider({ children }) {
     }
     setAuthError('');
     setCurrentStudent(result.student);
-    setState(loadStateForStudent(result.student.id));
+    setState(loadStateForStudent(result.student.id, result.student.email));
     showToast(`שלום, ${result.student.name.split(' ')[0]}!`);
   };
 
@@ -816,31 +852,44 @@ export function AppProvider({ children }) {
     setState((prev) => ({ ...prev, showAllCourses: !prev.showAllCourses }));
   };
 
+  const applyWeekChange = (prev, newOffset, selectedDay) => {
+    let nextSchedule = prev.scheduleByDay;
+    let aiTasks = prev.aiTasks;
+
+    prev.aiTasks.forEach((task) => {
+      if (!task.approved) return;
+      nextSchedule = removeTaskBlocksFromSchedule(nextSchedule, task.id);
+    });
+
+    aiTasks = prev.aiTasks.map((task) => {
+      if (!task.approved) return task;
+      const synced = scheduleTaskSteps(task, nextSchedule, newOffset);
+      nextSchedule = synced.scheduleByDay;
+      return synced.task;
+    });
+
+    return {
+      ...prev,
+      weekOffset: newOffset,
+      selectedDay,
+      scheduleByDay: nextSchedule,
+      aiTasks,
+    };
+  };
+
   const setWeekOffset = (delta) => {
     setState((prev) => {
       const newOffset = prev.weekOffset + delta;
-      let nextSchedule = prev.scheduleByDay;
-      let aiTasks = prev.aiTasks;
+      const selectedDay = newOffset === 0 ? getTodayAcademicDayIndex() : prev.selectedDay;
+      return applyWeekChange(prev, newOffset, selectedDay);
+    });
+  };
 
-      prev.aiTasks.forEach((task) => {
-        if (!task.approved) return;
-        nextSchedule = removeTaskBlocksFromSchedule(nextSchedule, task.id);
-      });
-
-      aiTasks = prev.aiTasks.map((task) => {
-        if (!task.approved) return task;
-        const synced = scheduleTaskSteps(task, nextSchedule, newOffset);
-        nextSchedule = synced.scheduleByDay;
-        return synced.task;
-      });
-
-      return {
-        ...prev,
-        weekOffset: newOffset,
-        selectedDay: newOffset === 0 ? getTodayAcademicDayIndex() : 0,
-        scheduleByDay: nextSchedule,
-        aiTasks,
-      };
+  const goToScheduleDate = (dateStr) => {
+    setState((prev) => {
+      const weekOffset = getWeekOffsetForDate(dateStr);
+      const selectedDay = getDayIndexForScheduleDate(dateStr, weekOffset);
+      return applyWeekChange(prev, weekOffset, selectedDay);
     });
   };
 
@@ -1429,6 +1478,7 @@ export function AppProvider({ children }) {
       calcGpaForFilter(state.grades, state.courses, currentStudent?.id, filter),
     pendingTasks,
     setWeekOffset,
+    goToScheduleDate,
     setSelectedDay,
     setActiveTaskIndex,
     addScheduleEvent,

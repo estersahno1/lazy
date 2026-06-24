@@ -119,10 +119,13 @@ function GradesPage() {
   const creditPercent = Math.min(100, Math.round((totalCredits / totalDegreeCredits) * 100));
 
   return (
-    <>
-      <h1 className="page-title">מעקב ציונים וממוצעים</h1>
-      <p className="page-subtitle">התקדמות הלימודים שלך תחת שליטה</p>
+    <div className="page page--grades">
+      <div className="page__intro">
+        <h1 className="page-title">מעקב ציונים וממוצעים</h1>
+        <p className="page-subtitle">התקדמות הלימודים שלך תחת שליטה</p>
+      </div>
 
+      <div className="page__overview">
       <div className="stat-row">
         <div className="stat-card">
           <p className="stat-card__label">ממוצע תואר</p>
@@ -174,8 +177,10 @@ function GradesPage() {
         </div>
         <p className="degree-progress__label">{creditPercent}% מהתואר הושלם</p>
       </div>
+      </div>
 
-      <form className="form-card" onSubmit={handleSubmit}>
+      <div className="page__form">
+      <form className="form-card form-card--grades" onSubmit={handleSubmit}>
         <div className="form-card__header">
           <span className="form-card__icon">{editingCourseId ? '✎' : '+'}</span>
           {editingCourseId ? 'עריכת קורס' : 'הוספת ציון חדש'}
@@ -277,7 +282,9 @@ function GradesPage() {
           </button>
         )}
       </form>
+      </div>
 
+      <div className="page__courses">
       <div className="section-header">
         <h2>רשימת קורסים ({filteredCourses.length})</h2>
       </div>
@@ -360,7 +367,8 @@ function GradesPage() {
           );
         })
       )}
-    </>
+      </div>
+    </div>
   );
 }
 

@@ -153,17 +153,44 @@ export function deleteStudentAccount(studentId, appDataKey) {
   return { ok: true };
 }
 
-export function seedDemoStudentIfEmpty() {
-  const students = loadStudents();
-  if (students.length > 0) return;
+export const DEMO_USER_EMAIL = 'dana@university.ac.il';
 
-  const demo = normalizeStudent({
-    id: 1,
-    name: 'דנה כהן',
-    email: 'dana@university.ac.il',
-    institution: 'אוניברסיטת תל אביב',
-    created_at: todayIso(),
-    password: '1234',
-  });
-  saveStudents([demo]);
+export function ensureDemoStudentAccount() {
+  const students = loadStudents();
+  const demoIndex = students.findIndex((s) => s.email === DEMO_USER_EMAIL);
+
+  if (demoIndex === -1) {
+    if (students.length > 0) return;
+    const demo = normalizeStudent({
+      id: 1,
+      name: 'דנה כהן',
+      email: DEMO_USER_EMAIL,
+      institution: 'הקריה האקדמית אונו',
+      created_at: todayIso(),
+      password: '1234',
+    });
+    saveStudents([demo]);
+    return;
+  }
+
+  const current = students[demoIndex];
+  const needsUpdate =
+    current.name !== 'דנה כהן' ||
+    current.institution !== 'הקריה האקדמית אונו' ||
+    current.password !== '1234';
+
+  if (needsUpdate) {
+    students[demoIndex] = normalizeStudent({
+      ...current,
+      name: 'דנה כהן',
+      institution: 'הקריה האקדמית אונו',
+      password: '1234',
+    });
+    saveStudents(students);
+  }
+}
+
+/** @deprecated use ensureDemoStudentAccount */
+export function seedDemoStudentIfEmpty() {
+  ensureDemoStudentAccount();
 }

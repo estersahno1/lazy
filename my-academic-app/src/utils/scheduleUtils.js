@@ -110,6 +110,37 @@ export function getWeekDays(weekOffset = 0) {
   return { days, monthLabel, weekStart: formatLocalDate(sunday) };
 }
 
+export const CALENDAR_WEEK_HEADERS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+
+export function buildMonthGrid(year, month) {
+  const first = new Date(year, month, 1);
+  const startPad = first.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < startPad; i += 1) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d += 1) {
+    cells.push({
+      day: d,
+      date: formatLocalDate(new Date(year, month, d)),
+    });
+  }
+  while (cells.length % 7 !== 0) cells.push(null);
+  return {
+    year,
+    month,
+    cells,
+    monthName: MONTH_NAMES[month],
+  };
+}
+
+export function getWeekOffsetForDate(dateStr) {
+  const targetSun = new Date(`${dateStr}T12:00:00`);
+  targetSun.setDate(targetSun.getDate() - targetSun.getDay());
+  targetSun.setHours(0, 0, 0, 0);
+  const todaySun = getSundayOfWeek(0);
+  return Math.round((targetSun - todaySun) / (7 * 86400000));
+}
+
 export function parseTime(time) {
   const [h, m] = String(time).split(':').map(Number);
   return h * 60 + (m || 0);

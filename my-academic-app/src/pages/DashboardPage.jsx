@@ -115,11 +115,14 @@ function DashboardPage() {
   };
 
   return (
-    <>
-      <h1 className="greeting">שלום, {firstName} 👋</h1>
-      <p className="greeting-sub">מוכנה ליום הלמידה הבא שלך?</p>
+    <div className="page page--home">
+      <div className="page__intro">
+        <h1 className="greeting">שלום, {firstName} 👋</h1>
+        <p className="greeting-sub">מוכנה ליום הלמידה הבא שלך?</p>
+      </div>
 
-      <div className="home-cards-row">
+      <div className="page__cards">
+        <div className="home-cards-row home-cards-row--hero">
         <div className="card card--purple card--compact">
           <p className="card__label">השיעור הבא</p>
           <h2 className="card__title card__title--compact">{nextClass.title}</h2>
@@ -163,8 +166,10 @@ function DashboardPage() {
             <p className="card__no-materials card__no-materials--exam">אין חומרים</p>
           )}
         </div>
+        </div>
       </div>
 
+      <div className="page__status">
       <div className="card status-card">
         <ProgressRing percent={weeklyProgress} />
         <div className="status-card__content">
@@ -173,7 +178,9 @@ function DashboardPage() {
           <p className="status-card__percent">{weeklyProgress}%</p>
         </div>
       </div>
+      </div>
 
+      <div className="page__urgent page__urgent-panel">
       <div className="section-header">
         <h2>⚠️ משימות דחופות להיום</h2>
         <button type="button" className="section-header__link section-header__link--btn" onClick={openNewUrgent}>
@@ -199,8 +206,11 @@ function DashboardPage() {
           </ul>
         )}
       </div>
+      </div>
 
-      <FullScheduleButton />
+      <div className="page__footer">
+        <FullScheduleButton />
+      </div>
 
       <Modal
         open={showMaterials}
@@ -214,61 +224,76 @@ function DashboardPage() {
         open={showUrgentModal}
         onClose={() => setShowUrgentModal(false)}
         title={editingUrgentId ? 'עריכת מטלה להגשה' : 'מטלה חדשה להגשה'}
+        size="form"
       >
-        <form onSubmit={handleUrgentSubmit}>
-          <label className="form-label" htmlFor="urgent-title">שם המטלה</label>
-          <input
-            id="urgent-title"
-            className="form-input form-input--full"
-            value={urgentForm.title}
-            onChange={(e) => setUrgentForm((p) => ({ ...p, title: e.target.value }))}
-            required
-          />
-          <label className="form-label" htmlFor="urgent-deadline">תאריך יעד</label>
-          <input
-            id="urgent-deadline"
-            className="form-input form-input--full"
-            type="date"
-            value={urgentForm.deadline}
-            onChange={(e) => setUrgentForm((p) => ({ ...p, deadline: e.target.value }))}
-          />
-          <label className="form-label" htmlFor="urgent-time">שעת הגשה</label>
-          <input
-            id="urgent-time"
-            className="form-input form-input--full"
-            type="time"
-            value={urgentForm.deadlineTime}
-            onChange={(e) => setUrgentForm((p) => ({ ...p, deadlineTime: e.target.value }))}
-          />
-          <label className="form-label" htmlFor="urgent-course">קורס משויך</label>
-          <select
-            id="urgent-course"
-            className="form-input form-input--full"
-            value={urgentForm.courseName}
-            onChange={(e) => setUrgentForm((p) => ({ ...p, courseName: e.target.value }))}
-          >
-            <option value="">ללא קורס</option>
-            {gradeCourseNames.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-          <label className="form-label" htmlFor="urgent-priority">עדיפות</label>
-          <select
-            id="urgent-priority"
-            className="form-input form-input--full"
-            value={urgentForm.priority}
-            onChange={(e) => setUrgentForm((p) => ({ ...p, priority: e.target.value }))}
-          >
-            {PRIORITY_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+        <form className="modal-form modal-form--urgent" onSubmit={handleUrgentSubmit}>
+          <div className="modal-form__row modal-form__row--wide-start">
+            <div className="modal-form__field">
+              <label className="form-label" htmlFor="urgent-title">שם המטלה</label>
+              <input
+                id="urgent-title"
+                className="form-input form-input--full"
+                value={urgentForm.title}
+                onChange={(e) => setUrgentForm((p) => ({ ...p, title: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="modal-form__field">
+              <label className="form-label" htmlFor="urgent-course">קורס משויך</label>
+              <select
+                id="urgent-course"
+                className="form-input form-input--full"
+                value={urgentForm.courseName}
+                onChange={(e) => setUrgentForm((p) => ({ ...p, courseName: e.target.value }))}
+              >
+                <option value="">ללא קורס</option>
+                {gradeCourseNames.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="modal-form__row modal-form__row--3">
+            <div className="modal-form__field">
+              <label className="form-label" htmlFor="urgent-deadline">תאריך יעד</label>
+              <input
+                id="urgent-deadline"
+                className="form-input form-input--full"
+                type="date"
+                value={urgentForm.deadline}
+                onChange={(e) => setUrgentForm((p) => ({ ...p, deadline: e.target.value }))}
+              />
+            </div>
+            <div className="modal-form__field">
+              <label className="form-label" htmlFor="urgent-time">שעת הגשה</label>
+              <input
+                id="urgent-time"
+                className="form-input form-input--full"
+                type="time"
+                value={urgentForm.deadlineTime}
+                onChange={(e) => setUrgentForm((p) => ({ ...p, deadlineTime: e.target.value }))}
+              />
+            </div>
+            <div className="modal-form__field">
+              <label className="form-label" htmlFor="urgent-priority">עדיפות</label>
+              <select
+                id="urgent-priority"
+                className="form-input form-input--full"
+                value={urgentForm.priority}
+                onChange={(e) => setUrgentForm((p) => ({ ...p, priority: e.target.value }))}
+              >
+                {PRIORITY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           {editingUrgentId && (
-            <label className="form-checkbox">
+            <label className="form-checkbox modal-form__field--full">
               <input
                 type="checkbox"
                 checked={urgentForm.completed}
@@ -277,12 +302,12 @@ function DashboardPage() {
               המטלה הושלמה
             </label>
           )}
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="btn btn-primary modal-form__submit">
             {editingUrgentId ? 'שמור שינויים' : 'הוסף מטלה'}
           </button>
         </form>
       </Modal>
-    </>
+    </div>
   );
 }
 
