@@ -2,9 +2,9 @@
 
 פרויקט מסכם - פיתוח אתרים
 
-## AcademicApp
+## Lazy — אפליקציית ניהול לימודים
 
-אפליקציית React לניהול משימות אקדמיות.
+אפליקציית React מובייל-פירסט לניהול משימות, ציונים ומערכת שעות.
 
 ### הרצה מקומית
 
@@ -14,11 +14,20 @@ npm install
 npm run dev
 ```
 
-פתחי בדפדפן: http://localhost:5173
+פתחי בדפדפן: http://localhost:5173 (מומלץ במצב מובייל / DevTools)
 
-### מבנה הפרויקט
+### עמודים
 
-- `my-academic-app/DESIGN.md` — Design System ומיפוי עמודים
-- `my-academic-app/src/pages/` — 4 עמודים (Landing, Auth, Dashboard, Tasks)
-- `my-academic-app/src/components/` — Navbar, Footer
-- `my-academic-app/src/styles/globals.css` — CSS Variables ועיצוב רספונסיבי
+| עמוד | Route |
+|------|-------|
+| בית (Home) | `/` |
+| AI Tasks | `/tasks` |
+| מערכת שעות | `/schedule` |
+| ציונים | `/grades` |
+
+### מבנה
+
+- `my-academic-app/DESIGN.md` — Design System
+- `my-academic-app/src/styles/globals.css` — CSS Variables
+- `my-academic-app/src/components/` — AppHeader, BottomNav
+- `my-academic-app/src/pages/` — 4 עמודים עם dummy data

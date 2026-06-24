@@ -1,25 +1,50 @@
 import { Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import LandingPage from './pages/LandingPage';
+import { AppProvider, useApp } from './context/AppContext';
+import AppHeader from './components/AppHeader';
+import BottomNav from './components/BottomNav';
+import Toast from './components/Toast';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import TaskManagerPage from './pages/TaskManagerPage';
+import SchedulePage from './pages/SchedulePage';
+import GradesPage from './pages/GradesPage';
+
+function AppShell() {
+  return (
+    <div className="app-shell">
+      <AppHeader />
+      <main className="app-main">
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/tasks" element={<TaskManagerPage />} />
+          <Route path="/schedule" element={<SchedulePage />} />
+          <Route path="/grades" element={<GradesPage />} />
+        </Routes>
+      </main>
+      <BottomNav />
+      <Toast />
+    </div>
+  );
+}
+
+function AppContent() {
+  const { isAuthenticated } = useApp();
+  if (!isAuthenticated) {
+    return (
+      <>
+        <AuthPage />
+        <Toast />
+      </>
+    );
+  }
+  return <AppShell />;
+}
 
 function App() {
   return (
-    <>
-      <Navbar />
-      <main>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/tasks" element={<TaskManagerPage />} />
-        </Routes>
-      </main>
-      <Footer />
-    </>
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }
 

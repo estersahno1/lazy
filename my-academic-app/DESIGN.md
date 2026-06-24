@@ -1,114 +1,73 @@
-# Design System — AcademicApp
+# Design System: Lazy — Calm & Gamified Productivity
 
-This document describes the visual design system and routing structure for the AcademicApp React application.
+This design system blends the calming palette of modern fintech interfaces with the spaciousness of Apple Calendar, the gamified engagement of Duolingo, and the clarity of Airbnb and Spotify.
+
+## Visual Direction
+
+- **Atmosphere:** Calm, clean, and organized, yet encouraging and playful.
+- **Color Palette:** Dominated by whites and soft grays for breathing room, accented by vibrant purple and pink for focus and progression.
+- **Spacing:** Generous white space (Apple Calendar style) to reduce cognitive load.
+- **Interactions:** Large, clear touch targets (Airbnb style) and gamified feedback (Duolingo style).
+- **Layout:** Mobile-first, RTL (Hebrew), max-width 480px app shell.
 
 ---
 
 ## Page URL Mapping
 
-| Page            | URL           | Component          | Description                              |
-|-----------------|---------------|--------------------|------------------------------------------|
-| Landing Page    | `/`           | `LandingPage.jsx`  | Home page with hero and feature overview |
-| Authentication  | `/auth`       | `AuthPage.jsx`     | Login and registration forms             |
-| Dashboard       | `/dashboard`  | `DashboardPage.jsx`| Stats overview and recent activity       |
-| Task Manager    | `/tasks`      | `TaskManagerPage.jsx` | Task list with mock data             |
+| Page | URL | Component | Description |
+|------|-----|-----------|-------------|
+| Home | `/` | `DashboardPage.jsx` | Greeting, next lesson, weekly status, urgent tasks |
+| AI Tasks | `/tasks` | `TaskManagerPage.jsx` | AI task breakdown with timeline steps |
+| Schedule | `/schedule` | `SchedulePage.jsx` | Weekly schedule grid with colored blocks |
+| Grades | `/grades` | `GradesPage.jsx` | Grade averages, add grade form, course list |
 
-Navigation is handled by **React Router v6** in `App.jsx`. Both the `Navbar` and `Footer` include links to all four routes.
+Navigation is handled by **React Router v6** in `App.jsx`. The **BottomNav** component provides Spotify-style bottom tab navigation between all four pages. **AppHeader** shows the Lazy brand, notifications, and profile on every screen.
 
 ---
 
-## Color Palette
+## Colors
 
-All colors are defined as CSS custom properties in `src/styles/globals.css`.
+| Role | Hex Code | CSS Variable | Usage |
+|------|----------|--------------|-------|
+| Primary | `#7C4DFF` | `--color-primary` | Brand, active nav, primary CTAs |
+| Secondary | `#FF4081` | `--color-secondary` | Progression, rewards, accents |
+| Accent | `#E1BEE7` | `--color-accent` | Card backgrounds, subtle highlights |
+| Background | `#F8F9FA` | `--color-background` | Main app background |
+| Text | `#212121` | `--color-text` | Primary text |
+| Error | `#FF5252` | `--color-error` | Destructive actions, alerts |
+| Success | `#4CAF50` | `--color-success` | Completion states, progress |
 
-| Token                    | Value     | Usage                          |
-|--------------------------|-----------|--------------------------------|
-| `--color-primary`        | `#4f46e5` | Buttons, links, brand accent   |
-| `--color-primary-hover`  | `#4338ca` | Hover state for primary        |
-| `--color-secondary`      | `#0ea5e9` | Secondary actions              |
-| `--color-secondary-hover`| `#0284c7` | Hover state for secondary      |
-| `--color-background`     | `#f8fafc` | Page background                |
-| `--color-surface`        | `#ffffff` | Cards, navbar, footer          |
-| `--color-text`           | `#1e293b` | Body text                      |
-| `--color-text-muted`     | `#64748b` | Secondary text, meta info      |
-| `--color-border`         | `#e2e8f0` | Borders and dividers           |
-| `--color-success`        | `#22c55e` | Completed / success states     |
-| `--color-warning`        | `#f59e0b` | In-progress / medium priority  |
-| `--color-danger`         | `#ef4444` | High priority / errors         |
+All colors are defined in `src/styles/globals.css`.
 
 ---
 
 ## Typography
 
-| Token                  | Value                                              |
-|------------------------|----------------------------------------------------|
-| `--font-family-base`   | `'Segoe UI', system-ui, -apple-system, sans-serif` |
-| `--font-family-heading`| Same as base                                       |
-| `--font-size-xs`       | `0.75rem` (12px)                                   |
-| `--font-size-sm`       | `0.875rem` (14px)                                  |
-| `--font-size-base`     | `1rem` (16px)                                      |
-| `--font-size-lg`       | `1.125rem` (18px)                                  |
-| `--font-size-xl`       | `1.25rem` (20px)                                   |
-| `--font-size-2xl`      | `1.5rem` (24px)                                    |
-| `--font-size-3xl`      | `2rem` (32px)                                      |
-
-Headings use `h1`–`h3` with the heading font family. Body text defaults to `--font-size-base` with a `1.6` line height.
+- **Primary Font:** Heebo + Plus Jakarta Sans (Google Fonts)
+- **Heading:** Bold / 24px–32px
+- **Body:** Regular / 16px (1.5 line height)
+- **Caption / Label:** SemiBold / 12px–14px
 
 ---
 
-## Spacing & Layout
+## Layout & Spacing
 
-| Token           | Value    |
-|-----------------|----------|
-| `--spacing-xs`  | `0.25rem`|
-| `--spacing-sm`  | `0.5rem` |
-| `--spacing-md`  | `1rem`   |
-| `--spacing-lg`  | `1.5rem` |
-| `--spacing-xl`  | `2rem`   |
-| `--spacing-2xl` | `3rem`   |
-| `--max-width`   | `1200px` |
-
-Content is centered inside a `.container` with horizontal padding. Pages use the `.page` class for vertical spacing.
+- **Base Unit:** 8px (`--space-1` through `--space-4`)
+- **Border Radius:** 16px (`--border-radius`)
+- **Screen Margins:** 24px (`--space-3`)
+- **Button Min-Height:** 56px
 
 ---
 
 ## Components
 
-### Buttons (`.btn`)
-
-- `.btn-primary` — filled indigo, used for main CTAs
-- `.btn-secondary` — filled sky blue, used for secondary actions
-- `.btn-outline` — bordered, used for alternative CTAs
-
-### Cards (`.card`)
-
-White surface with border, border-radius, and subtle shadow. Used for feature blocks, forms, and content sections.
-
-### Badges (`.badge`)
-
-Pill-shaped labels for status and priority:
-
-- `.badge-success` — green (completed)
-- `.badge-warning` — amber (in-progress / medium)
-- `.badge-danger` — red (high priority)
-- `.badge-info` — blue (pending / low)
-
-### Navbar
-
-Sticky top navigation with brand link and route links. Active route is highlighted with `.active` class.
-
-### Footer
-
-Bottom bar with navigation links and copyright notice.
-
----
-
-## Responsive Breakpoints
-
-| Breakpoint | Behavior                                              |
-|------------|-------------------------------------------------------|
-| `≤ 768px`  | Navbar stacks vertically; task items stack; smaller headings |
-| `≤ 480px`  | Card grid becomes single column; hero buttons stack   |
+| Component | Style |
+|-----------|-------|
+| **Buttons (CTA)** | Full-width, 16px radius, min-height 56px, bold text |
+| **Cards** | Subtle shadow, 16px radius, white or accent background, 20–24px padding |
+| **Inputs** | Light background, clear focus state with Primary color |
+| **Navigation** | Bottom tab bar (Spotify style), active state with Primary background |
+| **Progress Bars** | Thick, rounded rings (Duolingo style) with Secondary/Success colors |
 
 ---
 
@@ -122,13 +81,14 @@ my-academic-app/
 ├── vite.config.js
 └── src/
     ├── components/
-    │   ├── Navbar.jsx
-    │   └── Footer.jsx
+    │   ├── AppHeader.jsx
+    │   ├── BottomNav.jsx
+    │   └── Icons.jsx
     ├── pages/
-    │   ├── LandingPage.jsx
-    │   ├── AuthPage.jsx
     │   ├── DashboardPage.jsx
-    │   └── TaskManagerPage.jsx
+    │   ├── TaskManagerPage.jsx
+    │   ├── SchedulePage.jsx
+    │   └── GradesPage.jsx
     ├── styles/
     │   └── globals.css
     ├── App.jsx
@@ -145,4 +105,4 @@ npm install
 npm run dev
 ```
 
-The dev server starts at `http://localhost:5173` by default.
+Open http://localhost:5173 — the app is optimized for mobile widths (≤480px).
