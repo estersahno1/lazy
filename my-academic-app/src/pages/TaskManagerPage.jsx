@@ -8,6 +8,7 @@ import CourseNameInput from '../components/CourseNameInput';
 import { weeksUntilDeadline, formatDeadlineLabel, defaultWorkWeekIndices } from '../utils/scheduleUtils';
 import { extractDocumentText, isSupportedTaskFile } from '../utils/documentTextUtils';
 import { inferTaskTitle, previewParsedTasks, PARSE_STRATEGIES, PARSE_STRATEGY_LABELS } from '../utils/taskContentParser';
+import { parseTaskWithOpenAI } from '../services/edgeFunctions';
 import { findCourseByName, getGradeCourseNames } from '../utils/courseNameUtils';
 import { formatDuration, formatAllocatedTime, getTaskSubtasks } from '../utils/taskSplitter';
 
@@ -320,6 +321,7 @@ function TaskManagerPage() {
   const touchStartX = useRef(0);
   const taskFileInputRef = useRef(null);
   const [fileLoading, setFileLoading] = useState(false);
+  const [openAiLoading, setOpenAiLoading] = useState(false);
 
   const weeksLeft = weeksUntilDeadline(taskForm.deadline, taskForm.deadlineTime);
   const deadlinePlannerLabel = taskForm.deadline
@@ -391,6 +393,29 @@ function TaskManagerPage() {
     setAiParsed(true);
     setFileError('');
     showToast(`פורקו ${items.length} שלבים — אפשר לערוך לפני האישור`);
+  };
+
+  const runOpenAiParse = async () => {
+    if (!taskForm.description.trim()) {
+      setFileError('אין טקסט לפירוק. העלי קובץ או הדביקי את נוסח המטלה.');
+      return;
+    }
+    setOpenAiLoading(true);
+    setFileError('');
+    try {
+      const result = await parseTaskWithOpenAI(taskForm.title, taskForm.description);
+      if (!result.ok) {
+        setFileError(result.error || 'שגיאה בפירוק עם OpenAI');
+        return;
+      }
+      setParsedPreview(result.items);
+      setAiParsed(true);
+      showToast(`🧠 OpenAI פירקה ל-${result.items.length} שלבים`);
+    } catch (err) {
+      setFileError(err.message || 'שגיאה ברשת');
+    } finally {
+      setOpenAiLoading(false);
+    }
   };
 
   const handleSplitModeChange = (mode) => {
@@ -793,6 +818,20 @@ function TaskManagerPage() {
                   </button>
                 </div>
               )}
+
+              <div className="split-mode__openai">
+                <button
+                  type="button"
+                  className="btn btn-primary split-mode__openai-btn"
+                  onClick={runOpenAiParse}
+                  disabled={openAiLoading}
+                >
+                  {openAiLoading ? 'מפרקת...' : '🧠 פרק עם OpenAI (חכם)'}
+                </button>
+                <p className="form-hint">
+                  שימוש ב-OpenAI GPT לפירוק חכם של המטלה לשלבים מותאמים אישית
+                </p>
+              </div>
             </div>
           )}
 
