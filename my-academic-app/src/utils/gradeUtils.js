@@ -1,3 +1,5 @@
+import { sameUserId } from './courseUtils';
+
 export function normalizeGrade(grade) {
   return {
     id: Number(grade.id) || Date.now(),
@@ -10,7 +12,7 @@ export function normalizeGrade(grade) {
 export function gradesForUser(grades, userId, courses) {
   const userCourseIds = new Set(
     (courses || [])
-      .filter((c) => !c.user_id || Number(c.user_id) === Number(userId))
+      .filter((c) => !c.user_id || sameUserId(c.user_id, userId))
       .map((c) => Number(c.id))
   );
   return (grades || [])
@@ -32,7 +34,7 @@ export function calcGpaFromGrades(grades, courses, userId) {
 
 export function calcGpaForFilter(grades, courses, userId, { year, semester } = {}) {
   const userCourses = (courses || []).filter(
-    (c) => !c.user_id || Number(c.user_id) === Number(userId)
+    (c) => !c.user_id || sameUserId(c.user_id, userId)
   );
   const filteredCourseIds = new Set(
     userCourses
@@ -54,7 +56,7 @@ export function calcGpaForFilter(grades, courses, userId, { year, semester } = {
 
 export function enrichCoursesWithGrades(courses, grades, userId) {
   const userCourses = (courses || []).filter(
-    (c) => !c.user_id || Number(c.user_id) === Number(userId)
+    (c) => !c.user_id || sameUserId(c.user_id, userId)
   );
   return userCourses.map((course) => {
     const grade = getGradeForCourse(grades, course.id);

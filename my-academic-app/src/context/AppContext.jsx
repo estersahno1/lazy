@@ -43,6 +43,21 @@ import {
   updateStudentRecord,
   deleteStudentAccount,
 } from '../utils/authUtils';
+import { isSupabaseEnabled } from '../lib/supabase';
+import {
+  getSupabaseSession,
+  fetchSupabaseStudent,
+  supabaseLogin,
+  supabaseLoginWithGoogle,
+  supabaseRegister,
+  supabaseLogout,
+  supabaseUpdateProfile,
+  supabaseDeleteAccount,
+} from '../services/supabaseAuth';
+import {
+  loadAppStateFromSupabase,
+  saveAppStateToSupabase,
+} from '../services/supabaseData';
 import {
   isDemoUser,
   needsDemoSeedRefresh,
@@ -508,6 +523,9 @@ function loadStateForStudent(studentId, studentEmail) {
 }
 
 function initSession() {
+  if (isSupabaseEnabled) {
+    return { student: null, appState: createFreshAppState() };
+  }
   ensureDemoStudentAccount();
   const sessionId = getSessionStudentId();
   if (!sessionId) {
@@ -529,10 +547,25 @@ function calcGpa(courses, grades, userId) {
   return calcGpaFromGrades(grades, courses, userId);
 }
 
+function mergeCloudState(cloudState, studentId) {
+  if (!cloudState) return loadStateForStudent(studentId);
+  return applyAiTasksReconciliation(
+    parseStoredAppData(
+      {
+        ...createFreshAppState(),
+        ...cloudState,
+        selectedDay: getTodayAcademicDayIndex(),
+      },
+      studentId
+    )
+  );
+}
+
 export function AppProvider({ children }) {
   const sessionInit = useMemo(() => initSession(), []);
   const [currentStudent, setCurrentStudent] = useState(sessionInit.student);
   const [state, setState] = useState(sessionInit.appState);
+  const [authLoading, setAuthLoading] = useState(isSupabaseEnabled);
   const [authError, setAuthError] = useState('');
   const [toast, setToast] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -545,8 +578,40 @@ export function AppProvider({ children }) {
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
 
   useEffect(() => {
-    if (!currentStudent) return;
+    if (!isSupabaseEnabled) return undefined;
+    let cancelled = false;
+
+    (async () => {
+      const session = await getSupabaseSession();
+      if (cancelled) return;
+      if (!session) {
+        setAuthLoading(false);
+        return;
+      }
+      const student = await fetchSupabaseStudent(session);
+      const cloudState = await loadAppStateFromSupabase(session.user.id);
+      if (cancelled) return;
+      setCurrentStudent(student);
+      setState(mergeCloudState(cloudState, student.id));
+      setAuthLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!currentStudent) return undefined;
     localStorage.setItem(studentStorageKey(currentStudent.id), JSON.stringify(state));
+    if (!isSupabaseEnabled) return undefined;
+
+    const timer = setTimeout(() => {
+      saveAppStateToSupabase(currentStudent.id, state).catch((err) => {
+        console.warn('Supabase save failed:', err);
+      });
+    }, 800);
+    return () => clearTimeout(timer);
   }, [state, currentStudent]);
 
   useEffect(() => {
@@ -670,8 +735,22 @@ export function AppProvider({ children }) {
     [state.grades, state.courses, currentStudent?.id]
   );
 
-  const updateStudent = (updates) => {
+  const updateStudent = async (updates) => {
     if (!currentStudent) return;
+    if (isSupabaseEnabled) {
+      const result = await supabaseUpdateProfile(currentStudent.id, {
+        ...updates,
+        email: currentStudent.email,
+      });
+      if (!result.ok) {
+        showToast(result.error);
+        return;
+      }
+      setCurrentStudent((prev) => ({ ...prev, ...result.student }));
+      setShowProfileEdit(false);
+      showToast('הפרופיל עודכן!');
+      return;
+    }
     const result = updateStudentRecord(currentStudent.id, updates);
     if (!result.ok) {
       showToast(result.error);
@@ -684,7 +763,20 @@ export function AppProvider({ children }) {
 
   const clearAuthError = () => setAuthError('');
 
-  const login = (email, password) => {
+  const login = async (email, password) => {
+    if (isSupabaseEnabled) {
+      const result = await supabaseLogin(email, password);
+      if (!result.ok) {
+        setAuthError(result.error);
+        return;
+      }
+      setAuthError('');
+      setCurrentStudent(result.student);
+      const cloudState = await loadAppStateFromSupabase(result.student.id);
+      setState(mergeCloudState(cloudState, result.student.id));
+      showToast(`שלום, ${result.student.name.split(' ')[0]}!`);
+      return;
+    }
     const result = loginStudent(email, password);
     if (!result.ok) {
       setAuthError(result.error);
@@ -696,7 +788,36 @@ export function AppProvider({ children }) {
     showToast(`שלום, ${result.student.name.split(' ')[0]}!`);
   };
 
-  const register = ({ name, email, institution, password }) => {
+  const loginWithGoogle = async () => {
+    if (!isSupabaseEnabled) {
+      setAuthError('Google Login זמין רק כש-Supabase מוגדר');
+      return { ok: false };
+    }
+    const result = await supabaseLoginWithGoogle();
+    if (!result.ok) {
+      setAuthError(result.error);
+      return result;
+    }
+    return result;
+  };
+
+  const register = async ({ name, email, institution, password }) => {
+    if (isSupabaseEnabled) {
+      const result = await supabaseRegister({ name, email, institution, password });
+      if (!result.ok) {
+        setAuthError(result.error);
+        return null;
+      }
+      setAuthError('');
+      if (result.needsConfirmation) {
+        showToast('נרשמת! אשרי את האימייל ואז התחברי');
+        return result.email;
+      }
+      setCurrentStudent(result.student);
+      setState(createFreshAppState());
+      showToast('נרשמת בהצלחה!');
+      return result.email;
+    }
     const result = registerStudent({ name, email, institution, password });
     if (!result.ok) {
       setAuthError(result.error);
@@ -707,8 +828,9 @@ export function AppProvider({ children }) {
     return result.student.email;
   };
 
-  const logout = () => {
-    logoutStudent();
+  const logout = async () => {
+    if (isSupabaseEnabled) await supabaseLogout();
+    else logoutStudent();
     setCurrentStudent(null);
     setState(createFreshAppState());
     setShowProfile(false);
@@ -717,8 +839,21 @@ export function AppProvider({ children }) {
     showToast('התנתקת בהצלחה');
   };
 
-  const deleteAccount = () => {
+  const deleteAccount = async () => {
     if (!currentStudent) return false;
+    if (isSupabaseEnabled) {
+      const result = await supabaseDeleteAccount(currentStudent.id);
+      if (!result.ok) {
+        showToast(result.error);
+        return false;
+      }
+      setCurrentStudent(null);
+      setState(createFreshAppState());
+      setShowProfileEdit(false);
+      setShowProfile(false);
+      showToast('החשבון נמחק לצמיתות');
+      return true;
+    }
     const key = studentStorageKey(currentStudent.id);
     const result = deleteStudentAccount(currentStudent.id, key);
     if (!result.ok) {
@@ -1416,6 +1551,7 @@ export function AppProvider({ children }) {
     ...state,
     currentStudent,
     isAuthenticated: Boolean(currentStudent),
+    authLoading,
     profile: currentStudent,
     notifications,
     currentAiTask,
@@ -1458,6 +1594,7 @@ export function AppProvider({ children }) {
     updateStudent,
     updateProfile: updateStudent,
     login,
+    loginWithGoogle,
     register,
     logout,
     deleteAccount,

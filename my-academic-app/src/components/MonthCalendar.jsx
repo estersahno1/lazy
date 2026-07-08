@@ -5,7 +5,7 @@ import {
   todayLocalDate,
 } from '../utils/scheduleUtils';
 
-function MonthCalendar({ weekDays, selectedDay, onSelectDate }) {
+function MonthCalendar({ weekDays, selectedDay, onSelectDate, monthEventsByDate = {} }) {
   const selectedDate = weekDays[selectedDay]?.date;
   const anchor = selectedDate ? new Date(`${selectedDate}T12:00:00`) : new Date();
   const [viewYear, setViewYear] = useState(anchor.getFullYear());
@@ -70,16 +70,30 @@ function MonthCalendar({ weekDays, selectedDay, onSelectDate }) {
           const isSelected = cell.date === selectedDate;
           const isToday = cell.date === today;
           const inWeek = weekDateSet.has(cell.date);
+          const events = monthEventsByDate[cell.date] || [];
           return (
             <button
               key={cell.date}
               type="button"
-              className={`month-calendar__cell${isSelected ? ' month-calendar__cell--selected' : ''}${isToday ? ' month-calendar__cell--today' : ''}${inWeek ? ' month-calendar__cell--in-week' : ''}`}
+              className={`month-calendar__cell${isSelected ? ' month-calendar__cell--selected' : ''}${isToday ? ' month-calendar__cell--today' : ''}${inWeek ? ' month-calendar__cell--in-week' : ''}${events.length ? ' month-calendar__cell--has-events' : ''}`}
               onClick={() => onSelectDate(cell.date)}
               aria-label={`${cell.day} ${grid.monthName}`}
               aria-pressed={isSelected}
             >
-              {cell.day}
+              <span className="month-calendar__day-num">{cell.day}</span>
+              {events.length > 0 && (
+                <span className="month-calendar__tooltip" role="tooltip">
+                  {events.map((event) => (
+                    <span key={event.id} className="month-calendar__tooltip-line">
+                      <strong>{event.title}</strong>
+                      <em>
+                        {event.time}
+                        {event.room ? ` · ${event.room}` : ''}
+                      </em>
+                    </span>
+                  ))}
+                </span>
+              )}
             </button>
           );
         })}

@@ -21,9 +21,14 @@ export function normalizeCourse(course, userId) {
   };
 }
 
+export function sameUserId(a, b) {
+  if (a == null || b == null) return false;
+  return String(a) === String(b);
+}
+
 export function coursesForUser(courses, userId) {
   if (!userId) return [];
   return (courses || []).filter(
-    (c) => !c.user_id || Number(c.user_id) === Number(userId)
+    (c) => !c.user_id || sameUserId(c.user_id, userId)
   );
 }

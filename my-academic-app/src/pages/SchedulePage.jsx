@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import Modal from '../components/Modal';
 import MonthCalendar from '../components/MonthCalendar';
@@ -26,7 +26,9 @@ function SchedulePage() {
     updateScheduleEvent,
     deleteScheduleEvent,
     syncToCurrentWeek,
+    scheduleByDay,
   } = useApp();
+  const [viewMode, setViewMode] = useState('week');
 
   useEffect(() => {
     syncToCurrentWeek();
@@ -52,24 +54,105 @@ function SchedulePage() {
   };
 
   const selectedDayInfo = weekDays[selectedDay];
+  const selectedDate = selectedDayInfo?.date;
+  const weekRangeLabel = useMemo(() => {
+    if (!weekDays?.length) return '';
+    const start = weekDays[0]?.date;
+    const end = weekDays[weekDays.length - 1]?.date;
+    if (!start || !end) return '';
+    const startDate = new Date(`${start}T12:00:00`);
+    const endDate = new Date(`${end}T12:00:00`);
+    const sameMonth =
+      startDate.getMonth() === endDate.getMonth() &&
+      startDate.getFullYear() === endDate.getFullYear();
+
+    const startLabel = startDate.toLocaleDateString('he-IL', {
+      day: 'numeric',
+      month: 'long',
+    });
+    const endLabel = endDate.toLocaleDateString('he-IL', {
+      day: 'numeric',
+      month: sameMonth ? undefined : 'long',
+      year: startDate.getFullYear() !== endDate.getFullYear() ? 'numeric' : undefined,
+    });
+    return `${startLabel} – ${endLabel}`;
+  }, [weekDays]);
+  const monthEventsByDate = useMemo(() => {
+    const map = {};
+    for (let d = 0; d <= 4; d++) {
+      (scheduleByDay?.[d] || []).forEach((ev) => {
+        if (!ev.scheduledDate) return;
+        if (!map[ev.scheduledDate]) map[ev.scheduledDate] = [];
+        map[ev.scheduledDate].push(ev);
+      });
+    }
+    Object.keys(map).forEach((date) => {
+      map[date].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    });
+    return map;
+  }, [scheduleByDay]);
+
+  const weekEventsByDay = useMemo(
+    () =>
+      weekDays.map((day) => {
+        const dayEvents = (scheduleByDay?.[day.dayIndex] || []).filter(
+          (ev) => !ev.scheduledDate || ev.scheduledDate === day.date
+        );
+        const sorted = [...dayEvents].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+        return { ...day, events: sorted };
+      }),
+    [weekDays, scheduleByDay]
+  );
+
+  const monthEvents = useMemo(() => {
+    if (!selectedDate) return [];
+    return monthEventsByDate[selectedDate] || [];
+  }, [monthEventsByDate, selectedDate]);
 
   return (
-    <div className="page page--schedule">
+    <div className={`page page--schedule page--schedule--${viewMode}`}>
       <div className="page__header">
         <h1 className="page-title">מערכת שעות שבועית</h1>
         <p className="page-subtitle month-label">{monthLabel}</p>
       </div>
 
       <div className="schedule-layout">
-        <aside className="schedule-layout__calendar">
-          <MonthCalendar
-            weekDays={weekDays}
-            selectedDay={selectedDay}
-            onSelectDate={goToScheduleDate}
-          />
-        </aside>
+        {viewMode !== 'month' && (
+          <aside className="schedule-layout__calendar">
+            <MonthCalendar
+              weekDays={weekDays}
+              selectedDay={selectedDay}
+              onSelectDate={goToScheduleDate}
+              monthEventsByDate={monthEventsByDate}
+            />
+          </aside>
+        )}
 
         <div className="schedule-layout__main">
+          <div className="schedule-view-switch">
+            <button
+              type="button"
+              className={`schedule-view-switch__btn${viewMode === 'day' ? ' schedule-view-switch__btn--active' : ''}`}
+              onClick={() => setViewMode('day')}
+            >
+              יום
+            </button>
+            <button
+              type="button"
+              className={`schedule-view-switch__btn${viewMode === 'week' ? ' schedule-view-switch__btn--active' : ''}`}
+              onClick={() => setViewMode('week')}
+            >
+              שבוע
+            </button>
+            <button
+              type="button"
+              className={`schedule-view-switch__btn${viewMode === 'month' ? ' schedule-view-switch__btn--active' : ''}`}
+              onClick={() => setViewMode('month')}
+            >
+              חודש
+            </button>
+          </div>
+
           <div className="day-selector">
             <button
               type="button"
@@ -108,43 +191,132 @@ function SchedulePage() {
             </p>
           )}
 
-          <div className="schedule-grid">
-            <div className="schedule-grid__times">
-              {times.map((time) => (
-                <span key={time} className="schedule-grid__time">
-                  {time}
-                </span>
-              ))}
-            </div>
-            <div className="schedule-grid__blocks">
-              {currentSchedule.length === 0 ? (
-                <p className="schedule-empty">אין שיעורים ביום זה — לחצי + להוספה</p>
-              ) : (
-                currentSchedule.map((block) => (
-                  <button
-                    key={block.id}
-                    type="button"
-                    className={`schedule-block schedule-block--${block.color}${block.type === 'exam' ? ' schedule-block--dark' : ''}${block.atRisk ? ' schedule-block--at-risk' : ''}`}
-                    style={{ top: block.top, height: block.height }}
-                    onClick={() => openEditEvent(block.id)}
-                    title="לחיצה לעריכה"
-                  >
-                    <div>{block.title}</div>
-                    <div className="schedule-block__room">
-                      {block.time}
-                      {block.durationMinutes ? ` · ${formatDuration(block.durationMinutes)}` : ''}
-                      {block.room ? ` · ${block.room}` : ''}
-                    </div>
-                    {(block.materials || []).length > 0 && (
-                      <div className="schedule-block__materials">
-                        📎 {block.materials.length} חומרים
+          {viewMode === 'day' && (
+            <div className="schedule-grid">
+              <div className="schedule-grid__times">
+                {times.map((time) => (
+                  <span key={time} className="schedule-grid__time">
+                    {time}
+                  </span>
+                ))}
+              </div>
+              <div className="schedule-grid__blocks">
+                {currentSchedule.length === 0 ? (
+                  <p className="schedule-empty">אין שיעורים ביום זה — לחצי + להוספה</p>
+                ) : (
+                  currentSchedule.map((block) => (
+                    <button
+                      key={block.id}
+                      type="button"
+                      className={`schedule-block schedule-block--${block.color}${block.type === 'exam' ? ' schedule-block--dark' : ''}${block.atRisk ? ' schedule-block--at-risk' : ''}`}
+                      style={{ top: block.top, height: block.height }}
+                      onClick={() => openEditEvent(block.id)}
+                      title="לחיצה לעריכה"
+                    >
+                      <div>{block.title}</div>
+                      <div className="schedule-block__room">
+                        {block.time}
+                        {block.durationMinutes ? ` · ${formatDuration(block.durationMinutes)}` : ''}
+                        {block.room ? ` · ${block.room}` : ''}
                       </div>
+                      {(block.materials || []).length > 0 && (
+                        <div className="schedule-block__materials">
+                          📎 {block.materials.length} חומרים
+                        </div>
+                      )}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {viewMode === 'week' && (
+            <div className="week-view-wrap">
+              <div className="week-view-nav">
+                <button
+                  type="button"
+                  className="week-view-nav__arrow"
+                  aria-label="שבוע קודם"
+                  onClick={() => setWeekOffset(-1)}
+                >
+                  ‹
+                </button>
+                <p className="week-view-nav__label">{weekRangeLabel}</p>
+                <button
+                  type="button"
+                  className="week-view-nav__arrow"
+                  aria-label="שבוע הבא"
+                  onClick={() => setWeekOffset(1)}
+                >
+                  ›
+                </button>
+              </div>
+
+              <div className="week-view-grid">
+                {weekEventsByDay.map((day) => (
+                  <div key={day.date} className="week-view-day">
+                    <div className="week-view-day__head">
+                      <strong>{day.letter}</strong>
+                      <span>{day.num}</span>
+                    </div>
+                    {day.events.length === 0 ? (
+                      <p className="week-view-day__empty">ללא אירועים</p>
+                    ) : (
+                      day.events.map((event) => (
+                        <button
+                          key={event.id}
+                          type="button"
+                          className={`week-view-event week-view-event--${event.color || 'purple'}`}
+                          onClick={() => openEditEvent(event.id)}
+                        >
+                          <span className="week-view-event__title">{event.title}</span>
+                          <span className="week-view-event__meta">
+                            {event.time}
+                            {event.room ? ` · ${event.room}` : ''}
+                          </span>
+                        </button>
+                      ))
                     )}
-                  </button>
-                ))
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+ 
+          {viewMode === 'month' && (
+            <div className="month-view-panel card">
+              <div className="month-view-calendar">
+                <MonthCalendar
+                  weekDays={weekDays}
+                  selectedDay={selectedDay}
+                  onSelectDate={goToScheduleDate}
+                  monthEventsByDate={monthEventsByDate}
+                />
+              </div>
+              <p className="month-view-panel__title">
+                אירועים לתאריך נבחר: {selectedDayInfo?.num}
+              </p>
+              {monthEvents.length === 0 ? (
+                <p className="schedule-empty">אין אירועים לתאריך זה</p>
+              ) : (
+                <ul className="month-view-list">
+                  {monthEvents.map((event) => (
+                    <li key={event.id} className="month-view-list__item">
+                      <button type="button" onClick={() => openEditEvent(event.id)}>
+                        <strong>{event.title}</strong>
+                        <span>
+                          {event.time}
+                          {event.durationMinutes ? ` · ${formatDuration(event.durationMinutes)}` : ''}
+                          {event.room ? ` · ${event.room}` : ''}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
-          </div>
+          )}
         </div>
       </div>
 

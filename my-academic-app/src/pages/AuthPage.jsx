@@ -1,31 +1,33 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { isSupabaseEnabled } from '../lib/supabase';
 
 const emptyLogin = { email: '', password: '' };
 const emptyRegister = { name: '', email: '', institution: '', password: '', confirm: '' };
 
 function AuthPage() {
-  const { login, register, authError, clearAuthError } = useApp();
+  const { login, loginWithGoogle, register, authError, clearAuthError } = useApp();
   const [mode, setMode] = useState('login');
   const [loginForm, setLoginForm] = useState(emptyLogin);
   const [registerForm, setRegisterForm] = useState(emptyRegister);
+  const [oauthLoading, setOauthLoading] = useState(false);
 
   const switchMode = (next) => {
     setMode(next);
     clearAuthError();
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    login(loginForm.email, loginForm.password);
+    await login(loginForm.email, loginForm.password);
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     if (registerForm.password !== registerForm.confirm) {
       return;
     }
-    const registeredEmail = register({
+    const registeredEmail = await register({
       name: registerForm.name,
       email: registerForm.email,
       institution: registerForm.institution,
@@ -38,10 +40,20 @@ function AuthPage() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    if (oauthLoading) return;
+    setOauthLoading(true);
+    try {
+      await loginWithGoogle();
+    } finally {
+      setOauthLoading(false);
+    }
+  };
+
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1 className="auth-card__brand">Lazy</h1>
+        <img src="/logo.png" alt="Lazy" className="auth-card__logo" />
         <p className="auth-card__subtitle">ניהול לימודים חכם לסטודנטים</p>
 
         <div className="auth-tabs">
@@ -62,6 +74,22 @@ function AuthPage() {
         </div>
 
         {authError && <p className="auth-card__error">{authError}</p>}
+
+        <>
+          <button
+            type="button"
+            className="btn btn-primary auth-form__submit"
+            onClick={handleGoogleLogin}
+            disabled={oauthLoading}
+          >
+            {oauthLoading ? 'מעביר ל-Google...' : 'המשך עם Google'}
+          </button>
+          <p className="auth-card__hint">
+            {isSupabaseEnabled
+              ? 'או התחברות עם אימייל וסיסמה'
+              : 'כדי ש-Google Login יעבוד צריך להגדיר Supabase (.env.local)'}
+          </p>
+        </>
 
         {mode === 'login' ? (
           <form className="auth-form" onSubmit={handleLogin}>

@@ -28,7 +28,17 @@ function AppShell() {
 }
 
 function AppContent() {
-  const { isAuthenticated } = useApp();
+  const { isAuthenticated, authLoading } = useApp();
+  if (authLoading) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card">
+          <p className="auth-card__subtitle">טוען...</p>
+        </div>
+        <Toast />
+      </div>
+    );
+  }
   if (!isAuthenticated) {
     return (
       <>
