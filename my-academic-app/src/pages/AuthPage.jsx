@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { isSupabaseEnabled } from '../lib/supabase';
+import { GoogleIcon } from '../components/Icons';
 
 const emptyLogin = { email: '', password: '' };
 const emptyRegister = { name: '', email: '', institution: '', password: '', confirm: '' };
@@ -52,46 +53,50 @@ function AuthPage() {
 
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <img src="/logo.png" alt="Lazy" className="auth-card__logo" />
-        <p className="auth-card__subtitle">ניהול לימודים חכם לסטודנטים</p>
-
-        <div className="auth-tabs">
-          <button
-            type="button"
-            className={`auth-tabs__btn${mode === 'login' ? ' auth-tabs__btn--active' : ''}`}
-            onClick={() => switchMode('login')}
-          >
-            התחברות
-          </button>
-          <button
-            type="button"
-            className={`auth-tabs__btn${mode === 'register' ? ' auth-tabs__btn--active' : ''}`}
-            onClick={() => switchMode('register')}
-          >
-            הרשמה
-          </button>
-        </div>
-
-        {authError && <p className="auth-card__error">{authError}</p>}
-
-        <>
-          <button
-            type="button"
-            className="btn btn-primary auth-form__submit"
-            onClick={handleGoogleLogin}
-            disabled={oauthLoading}
-          >
-            {oauthLoading ? 'מעביר ל-Google...' : 'המשך עם Google'}
-          </button>
-          <p className="auth-card__hint">
-            {isSupabaseEnabled
-              ? 'או התחברות עם אימייל וסיסמה'
-              : 'כדי ש-Google Login יעבוד צריך להגדיר Supabase (.env.local)'}
+      <div className="auth-showcase" aria-hidden="true">
+        <div className="auth-showcase__glow auth-showcase__glow--a" />
+        <div className="auth-showcase__glow auth-showcase__glow--b" />
+        <div className="auth-showcase__content">
+          <img src="/logo.png" alt="" className="auth-showcase__logo" />
+          <span className="auth-showcase__badge">✨ Lazy Academic Planner</span>
+          <h1 className="auth-showcase__title">מנהלים את הסמסטר חכם, לא קשה</h1>
+          <p className="auth-showcase__text">
+            פירוק משימות גדולות לשלבים, לוח זמנים ברור, מעקב ציונים והתראות בזמן —
+            הכל במקום אחד, מותאם אישית לסטודנט הישראלי.
           </p>
-        </>
+          <ul className="auth-showcase__features">
+            <li>🧠 פירוק משימות עם AI</li>
+            <li>🗓️ מערכת שעות חכמה</li>
+            <li>📊 מעקב ציונים וממוצעים</li>
+          </ul>
+        </div>
+      </div>
 
-        {mode === 'login' ? (
+      <div className="auth-card-wrap">
+        <div className="auth-card">
+          <img src="/logo.png" alt="Lazy" className="auth-card__logo" />
+          <p className="auth-card__subtitle">ניהול לימודים חכם לסטודנטים</p>
+
+          <div className="auth-tabs">
+            <button
+              type="button"
+              className={`auth-tabs__btn${mode === 'login' ? ' auth-tabs__btn--active' : ''}`}
+              onClick={() => switchMode('login')}
+            >
+              התחברות
+            </button>
+            <button
+              type="button"
+              className={`auth-tabs__btn${mode === 'register' ? ' auth-tabs__btn--active' : ''}`}
+              onClick={() => switchMode('register')}
+            >
+              הרשמה
+            </button>
+          </div>
+
+          {authError && <p className="auth-card__error">{authError}</p>}
+
+          {mode === 'login' ? (
           <form className="auth-form" onSubmit={handleLogin}>
             <label className="form-label" htmlFor="login-email">אימייל</label>
             <input
@@ -115,7 +120,7 @@ function AuthPage() {
               required
               autoComplete="current-password"
             />
-            <button type="submit" className="btn btn-primary auth-form__submit">
+            <button type="submit" className="btn-gradient auth-form__submit">
               התחברי
             </button>
             <p className="auth-card__hint">
@@ -183,7 +188,7 @@ function AuthPage() {
               )}
             <button
               type="submit"
-              className="btn btn-primary auth-form__submit"
+              className="btn-gradient auth-form__submit"
               disabled={
                 registerForm.password !== registerForm.confirm ||
                 registerForm.password.length < 4
@@ -193,6 +198,26 @@ function AuthPage() {
             </button>
           </form>
         )}
+
+          <div className="auth-divider">
+            <span>או שאתה יכול להתחבר עם...</span>
+          </div>
+
+          <button
+            type="button"
+            className="auth-google-btn"
+            onClick={handleGoogleLogin}
+            disabled={oauthLoading || !isSupabaseEnabled}
+          >
+            <GoogleIcon />
+            {oauthLoading ? 'מעביר ל-Google...' : 'המשך עם Google'}
+          </button>
+          {!isSupabaseEnabled && (
+            <p className="auth-card__hint">
+              כדי ש-Google Login יעבוד צריך להגדיר Supabase (.env.local)
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

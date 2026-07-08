@@ -3949,6 +3949,109 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
+  align-items: stretch;
+  justify-content: center;
+  background: var(--color-surface);
+}
+
+/* Desktop-only branding panel; purely decorative (aria-hidden), hidden on mobile */
+.auth-showcase {
+  display: none;
+  position: relative;
+  overflow: hidden;
+  flex: 1 1 46%;
+  padding: clamp(32px, 5vw, 64px);
+  background: var(--gradient-hero);
+  color: #fff;
+}
+
+.auth-showcase__glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+.auth-showcase__glow--a {
+  width: 420px;
+  height: 420px;
+  top: -140px;
+  inset-inline-end: -120px;
+  background: radial-gradient(circle, rgba(147, 108, 255, 0.35) 0%, transparent 70%);
+}
+
+.auth-showcase__glow--b {
+  width: 360px;
+  height: 360px;
+  bottom: -140px;
+  inset-inline-start: -100px;
+  background: radial-gradient(circle, rgba(255, 154, 108, 0.18) 0%, transparent 70%);
+}
+
+.auth-showcase__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  max-width: 440px;
+}
+
+.auth-showcase__logo {
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--space-3);
+}
+
+.auth-showcase__badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  margin-bottom: var(--space-3);
+}
+
+.auth-showcase__title {
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: var(--space-2);
+}
+
+.auth-showcase__text {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  margin-bottom: var(--space-4);
+}
+
+.auth-showcase__features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0;
+  margin: 0;
+}
+
+.auth-showcase__features li {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--border-radius-sm);
+  padding: var(--space-2) var(--space-3);
+}
+
+.auth-card-wrap {
+  flex: 1 1 54%;
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-3);
@@ -3956,13 +4059,24 @@ body {
   background: linear-gradient(160deg, #f3eeff 0%, var(--color-background) 45%, #fff5f8 100%);
 }
 
+@media (min-width: 1024px) {
+  .auth-showcase {
+    display: block;
+  }
+
+  .auth-card-wrap {
+    background: var(--color-surface);
+  }
+}
+
 .auth-card {
   width: 100%;
   max-width: min(400px, calc(100vw - var(--space-3) * 2));
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
   padding: var(--space-4);
-  box-shadow: 0 12px 40px rgba(124, 77, 255, 0.12);
+  box-shadow: 0 20px 60px rgba(124, 77, 255, 0.14);
 }
 
 .auth-card__logo {
@@ -3986,7 +4100,7 @@ body {
   margin-bottom: var(--space-3);
   background: var(--color-background);
   padding: 4px;
-  border-radius: var(--border-radius-sm);
+  border-radius: 999px;
 }
 
 .auth-tabs__btn {
@@ -3996,15 +4110,16 @@ body {
   font-size: var(--font-size-sm);
   font-weight: 600;
   padding: var(--space-2);
-  border-radius: var(--border-radius-sm);
+  border-radius: 999px;
   cursor: pointer;
   color: var(--color-text-muted);
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 .auth-tabs__btn--active {
-  background: var(--color-surface);
-  color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: var(--gradient-accent);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(124, 77, 255, 0.3);
 }
 
 .auth-form {
@@ -4030,6 +4145,52 @@ body {
   font-size: var(--font-size-caption);
   color: var(--color-text-muted);
   margin: var(--space-2) 0 0;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.auth-google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.auth-google-btn:hover:not(:disabled) {
+  box-shadow: var(--shadow-elevated);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.auth-google-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Grades page — year filter & semester groups */
