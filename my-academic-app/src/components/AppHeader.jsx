@@ -158,6 +158,7 @@ function AppHeader() {
             <BellIcon />
             {unreadCount > 0 && <span className="app-header__badge">{unreadCount}</span>}
           </button>
+          {showNotifications && renderNotificationsPanel()}
           {showProfile && (
             <>
               <div className="app-menu-overlay app-menu-overlay--desktop" onClick={closePanels} />

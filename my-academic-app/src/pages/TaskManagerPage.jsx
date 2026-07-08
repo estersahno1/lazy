@@ -11,6 +11,7 @@ import { inferTaskTitle, previewParsedTasks, PARSE_STRATEGIES, PARSE_STRATEGY_LA
 import { parseTaskWithOpenAI } from '../services/edgeFunctions';
 import { findCourseByName, getGradeCourseNames } from '../utils/courseNameUtils';
 import { formatDuration, formatAllocatedTime, getTaskSubtasks } from '../utils/taskSplitter';
+import { useSectionReveal } from '../utils/useSectionReveal';
 
 const SPLIT_BUILD_MODES = {
   manual: 'manual',
@@ -322,6 +323,7 @@ function TaskManagerPage() {
   const taskFileInputRef = useRef(null);
   const [fileLoading, setFileLoading] = useState(false);
   const [openAiLoading, setOpenAiLoading] = useState(false);
+  const registerReveal = useSectionReveal();
 
   const weeksLeft = weeksUntilDeadline(taskForm.deadline, taskForm.deadlineTime);
   const deadlinePlannerLabel = taskForm.deadline
@@ -528,16 +530,17 @@ function TaskManagerPage() {
 
   return (
     <div className="page page--tasks">
-      <div className="tasks-page-header">
+      <div className="tasks-page-header page-hero-banner">
         <div className="tasks-page-header__text">
-          <h1 className="page-title">מפרק המשימות</h1>
-          <p className="page-subtitle">
+          <span className="page-hero-banner__eyebrow">🧠 פירוק חכם</span>
+          <h1 className="page-hero-banner__title">מפרק המשימות</h1>
+          <p className="page-hero-banner__subtitle">
             הבינה המלאכותית פירקה את המטלה שלך לצעדים ברי ביצוע.
           </p>
         </div>
         <button
           type="button"
-          className="btn btn-primary btn--new-task"
+          className="btn-on-glass btn--new-task"
           onClick={() => setShowNewTaskModal(true)}
         >
           + משימה חדשה
@@ -545,7 +548,7 @@ function TaskManagerPage() {
       </div>
 
       {aiTasks.length > 0 ? (
-        <div className="page__carousel">
+        <div className="page__carousel section-reveal" ref={registerReveal}>
           <div
             ref={carouselRef}
             className="ai-carousel-wrap"
@@ -616,7 +619,7 @@ function TaskManagerPage() {
         <p className="page-subtitle page__empty">אין משימות AI — לחצי + משימה חדשה</p>
       )}
 
-      <div className="tip-box">
+      <div className="tip-box section-reveal" ref={registerReveal}>
         <span className="tip-box__icon">💡</span>
         <p>טיפ: {AI_TIPS[tipIndex]}</p>
       </div>

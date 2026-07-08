@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { TrashIcon, EditIcon } from '../components/Icons';
 import { SEMESTER_OPTIONS, YEAR_OPTIONS, semesterVariant } from '../utils/courseUtils';
 import CourseNameInput from '../components/CourseNameInput';
+import { useSectionReveal } from '../utils/useSectionReveal';
 
 const emptyForm = {
   courseName: '',
@@ -117,15 +118,17 @@ function GradesPage() {
   );
 
   const creditPercent = Math.min(100, Math.round((totalCredits / totalDegreeCredits) * 100));
+  const registerReveal = useSectionReveal();
 
   return (
     <div className="page page--grades">
-      <div className="page__intro">
-        <h1 className="page-title">מעקב ציונים וממוצעים</h1>
-        <p className="page-subtitle">התקדמות הלימודים שלך תחת שליטה</p>
+      <div className="page-hero-banner">
+        <span className="page-hero-banner__eyebrow">📊 מעקב אקדמי</span>
+        <h1 className="page-hero-banner__title">מעקב ציונים וממוצעים</h1>
+        <p className="page-hero-banner__subtitle">התקדמות הלימודים שלך תחת שליטה</p>
       </div>
 
-      <div className="page__overview">
+      <div className="page__overview section-reveal" ref={registerReveal}>
       <div className="stat-row">
         <div className="stat-card">
           <p className="stat-card__label">ממוצע תואר</p>
@@ -179,7 +182,7 @@ function GradesPage() {
       </div>
       </div>
 
-      <div className="page__form">
+      <div className="page__form section-reveal" ref={registerReveal}>
       <form className="form-card form-card--grades" onSubmit={handleSubmit}>
         <div className="form-card__header">
           <span className="form-card__icon">{editingCourseId ? '✎' : '+'}</span>
@@ -284,7 +287,7 @@ function GradesPage() {
       </form>
       </div>
 
-      <div className="page__courses">
+      <div className="page__courses section-reveal" ref={registerReveal}>
       <div className="section-header">
         <h2>רשימת קורסים ({filteredCourses.length})</h2>
       </div>
@@ -334,7 +337,7 @@ function GradesPage() {
                     <div className="course-card__actions">
                       <button
                         type="button"
-                        className="app-header__icon-btn"
+                        className="course-card__icon-btn"
                         aria-label="מחק קורס"
                         onClick={() => handleDeleteCourse(course)}
                       >
@@ -353,7 +356,7 @@ function GradesPage() {
                       )}
                       <button
                         type="button"
-                        className="app-header__icon-btn"
+                        className="course-card__icon-btn"
                         aria-label="ערוך"
                         onClick={() => setEditingCourse(course.id)}
                       >

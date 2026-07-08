@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import MonthCalendar from '../components/MonthCalendar';
 import { ScheduleEventForm } from '../components/ProfileEditModal';
 import { formatDuration } from '../utils/taskSplitter';
+import { useSectionReveal } from '../utils/useSectionReveal';
 
 const times = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'];
 
@@ -29,6 +30,7 @@ function SchedulePage() {
     scheduleByDay,
   } = useApp();
   const [viewMode, setViewMode] = useState('week');
+  const registerReveal = useSectionReveal();
 
   useEffect(() => {
     syncToCurrentWeek();
@@ -111,12 +113,13 @@ function SchedulePage() {
 
   return (
     <div className={`page page--schedule page--schedule--${viewMode}`}>
-      <div className="page__header">
-        <h1 className="page-title">מערכת שעות שבועית</h1>
-        <p className="page-subtitle month-label">{monthLabel}</p>
+      <div className="page-hero-banner">
+        <span className="page-hero-banner__eyebrow">🗓️ סדר יום</span>
+        <h1 className="page-hero-banner__title">מערכת שעות שבועית</h1>
+        <p className="page-hero-banner__subtitle month-label">{monthLabel}</p>
       </div>
 
-      <div className="schedule-layout">
+      <div className="schedule-layout section-reveal" ref={registerReveal}>
         {viewMode !== 'month' && (
           <aside className="schedule-layout__calendar">
             <MonthCalendar

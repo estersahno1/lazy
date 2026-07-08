@@ -193,10 +193,6 @@ function DashboardPage() {
     <div className="page page--home">
       <section className="home-hero card home-hero--v2" ref={heroRef}>
         <div className="home-hero__bg-grid" aria-hidden />
-        <div className="home-hero__particle home-hero__particle--1" aria-hidden />
-        <div className="home-hero__particle home-hero__particle--2" aria-hidden />
-        <div className="home-hero__particle home-hero__particle--3" aria-hidden />
-        <div className="home-hero__particle home-hero__particle--4" aria-hidden />
         <div className="home-hero__glow home-hero__glow--a" aria-hidden />
         <div className="home-hero__glow home-hero__glow--b" aria-hidden />
 
