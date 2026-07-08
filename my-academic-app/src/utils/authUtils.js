@@ -154,22 +154,39 @@ export function deleteStudentAccount(studentId, appDataKey) {
 }
 
 export const DEMO_USER_EMAIL = 'dana@university.ac.il';
+export const DEMO_USER_PASSWORD = '1234';
+
+export function isDemoCredentials(email, password) {
+  return (
+    (email ?? '').trim().toLowerCase() === DEMO_USER_EMAIL &&
+    password === DEMO_USER_PASSWORD
+  );
+}
+
+export function isLocalDemoStudent(student) {
+  return Boolean(student && isDemoUserEmail(student.email) && typeof student.id === 'number');
+}
+
+function isDemoUserEmail(email) {
+  return (email ?? '').trim().toLowerCase() === DEMO_USER_EMAIL;
+}
 
 export function ensureDemoStudentAccount() {
   const students = loadStudents();
   const demoIndex = students.findIndex((s) => s.email === DEMO_USER_EMAIL);
 
   if (demoIndex === -1) {
-    if (students.length > 0) return;
+    const demoId = students.some((s) => s.id === 1) ? Date.now() : 1;
     const demo = normalizeStudent({
-      id: 1,
+      id: demoId,
       name: 'דנה כהן',
       email: DEMO_USER_EMAIL,
       institution: 'הקריה האקדמית אונו',
       created_at: todayIso(),
-      password: '1234',
+      password: DEMO_USER_PASSWORD,
     });
-    saveStudents([demo]);
+    students.push(demo);
+    saveStudents(students);
     return;
   }
 
@@ -177,14 +194,14 @@ export function ensureDemoStudentAccount() {
   const needsUpdate =
     current.name !== 'דנה כהן' ||
     current.institution !== 'הקריה האקדמית אונו' ||
-    current.password !== '1234';
+    current.password !== DEMO_USER_PASSWORD;
 
   if (needsUpdate) {
     students[demoIndex] = normalizeStudent({
       ...current,
       name: 'דנה כהן',
       institution: 'הקריה האקדמית אונו',
-      password: '1234',
+      password: DEMO_USER_PASSWORD,
     });
     saveStudents(students);
   }

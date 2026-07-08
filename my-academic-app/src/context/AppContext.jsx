@@ -42,6 +42,8 @@ import {
   logoutStudent,
   updateStudentRecord,
   deleteStudentAccount,
+  isDemoCredentials,
+  isLocalDemoStudent,
 } from '../utils/authUtils';
 import { isSupabaseEnabled } from '../lib/supabase';
 import {
@@ -523,10 +525,10 @@ function loadStateForStudent(studentId, studentEmail) {
 }
 
 function initSession() {
+  ensureDemoStudentAccount();
   if (isSupabaseEnabled) {
     return { student: null, appState: createFreshAppState() };
   }
-  ensureDemoStudentAccount();
   const sessionId = getSessionStudentId();
   if (!sessionId) {
     return { student: null, appState: createFreshAppState() };
@@ -547,9 +549,11 @@ function calcGpa(courses, grades, userId) {
   return calcGpaFromGrades(grades, courses, userId);
 }
 
-function mergeCloudState(cloudState, studentId) {
-  if (!cloudState) return loadStateForStudent(studentId);
-  return applyAiTasksReconciliation(
+function mergeCloudState(cloudState, studentId, studentEmail) {
+  if (!cloudState) {
+    return loadStateForStudent(studentId, studentEmail);
+  }
+  const merged = applyAiTasksReconciliation(
     parseStoredAppData(
       {
         ...createFreshAppState(),
@@ -559,6 +563,13 @@ function mergeCloudState(cloudState, studentId) {
       studentId
     )
   );
+  if (isDemoUser(studentEmail) && needsDemoSeedRefresh(merged)) {
+    const demoState = resolveDemoSeedState(studentId, studentEmail);
+    return applyAiTasksReconciliation(
+      parseStoredAppData(demoState, studentId)
+    );
+  }
+  return merged;
 }
 
 export function AppProvider({ children }) {
@@ -584,15 +595,24 @@ export function AppProvider({ children }) {
     (async () => {
       const session = await getSupabaseSession();
       if (cancelled) return;
-      if (!session) {
+      if (session) {
+        const student = await fetchSupabaseStudent(session);
+        const cloudState = await loadAppStateFromSupabase(session.user.id);
+        if (cancelled) return;
+        setCurrentStudent(student);
+        setState(mergeCloudState(cloudState, student.id, student.email));
         setAuthLoading(false);
         return;
       }
-      const student = await fetchSupabaseStudent(session);
-      const cloudState = await loadAppStateFromSupabase(session.user.id);
-      if (cancelled) return;
-      setCurrentStudent(student);
-      setState(mergeCloudState(cloudState, student.id));
+
+      const sessionId = getSessionStudentId();
+      if (sessionId) {
+        const student = getStudentById(sessionId);
+        if (student && isLocalDemoStudent(student)) {
+          setCurrentStudent(student);
+          setState(loadStateForStudent(student.id, student.email));
+        }
+      }
       setAuthLoading(false);
     })();
 
@@ -604,7 +624,7 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!currentStudent) return undefined;
     localStorage.setItem(studentStorageKey(currentStudent.id), JSON.stringify(state));
-    if (!isSupabaseEnabled) return undefined;
+    if (!isSupabaseEnabled || isLocalDemoStudent(currentStudent)) return undefined;
 
     const timer = setTimeout(() => {
       saveAppStateToSupabase(currentStudent.id, state).catch((err) => {
@@ -737,7 +757,7 @@ export function AppProvider({ children }) {
 
   const updateStudent = async (updates) => {
     if (!currentStudent) return;
-    if (isSupabaseEnabled) {
+    if (isSupabaseEnabled && !isLocalDemoStudent(currentStudent)) {
       const result = await supabaseUpdateProfile(currentStudent.id, {
         ...updates,
         email: currentStudent.email,
@@ -764,6 +784,19 @@ export function AppProvider({ children }) {
   const clearAuthError = () => setAuthError('');
 
   const login = async (email, password) => {
+    if (isDemoCredentials(email, password)) {
+      ensureDemoStudentAccount();
+      const result = loginStudent(email, password);
+      if (!result.ok) {
+        setAuthError(result.error);
+        return;
+      }
+      setAuthError('');
+      setCurrentStudent(result.student);
+      setState(loadStateForStudent(result.student.id, result.student.email));
+      showToast(`שלום, ${result.student.name.split(' ')[0]}!`);
+      return;
+    }
     if (isSupabaseEnabled) {
       const result = await supabaseLogin(email, password);
       if (!result.ok) {
@@ -773,7 +806,7 @@ export function AppProvider({ children }) {
       setAuthError('');
       setCurrentStudent(result.student);
       const cloudState = await loadAppStateFromSupabase(result.student.id);
-      setState(mergeCloudState(cloudState, result.student.id));
+      setState(mergeCloudState(cloudState, result.student.id, result.student.email));
       showToast(`שלום, ${result.student.name.split(' ')[0]}!`);
       return;
     }
@@ -829,8 +862,11 @@ export function AppProvider({ children }) {
   };
 
   const logout = async () => {
-    if (isSupabaseEnabled) await supabaseLogout();
-    else logoutStudent();
+    if (isSupabaseEnabled && !isLocalDemoStudent(currentStudent)) {
+      await supabaseLogout();
+    } else {
+      logoutStudent();
+    }
     setCurrentStudent(null);
     setState(createFreshAppState());
     setShowProfile(false);
@@ -841,7 +877,7 @@ export function AppProvider({ children }) {
 
   const deleteAccount = async () => {
     if (!currentStudent) return false;
-    if (isSupabaseEnabled) {
+    if (isSupabaseEnabled && !isLocalDemoStudent(currentStudent)) {
       const result = await supabaseDeleteAccount(currentStudent.id);
       if (!result.ok) {
         showToast(result.error);
