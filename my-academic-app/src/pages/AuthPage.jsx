@@ -57,7 +57,6 @@ function AuthPage() {
         <div className="auth-showcase__glow auth-showcase__glow--a" />
         <div className="auth-showcase__glow auth-showcase__glow--b" />
         <div className="auth-showcase__content">
-          <img src="/logo.png" alt="" className="auth-showcase__logo" />
           <span className="auth-showcase__badge">✨ Lazy Academic Planner</span>
           <h1 className="auth-showcase__title">מנהלים את הסמסטר חכם, לא קשה</h1>
           <p className="auth-showcase__text">
@@ -74,7 +73,6 @@ function AuthPage() {
 
       <div className="auth-card-wrap">
         <div className="auth-card">
-          <img src="/logo.png" alt="Lazy" className="auth-card__logo" />
           <p className="auth-card__subtitle">ניהול לימודים חכם לסטודנטים</p>
 
           <div className="auth-tabs">

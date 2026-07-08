@@ -3998,12 +3998,6 @@ body {
   max-width: 440px;
 }
 
-.auth-showcase__logo {
-  width: 56px;
-  height: 56px;
-  margin-bottom: var(--space-3);
-}
-
 .auth-showcase__badge {
   display: inline-block;
   align-self: flex-start;
@@ -4077,13 +4071,6 @@ body {
   border-radius: var(--border-radius);
   padding: var(--space-4);
   box-shadow: 0 20px 60px rgba(124, 77, 255, 0.14);
-}
-
-.auth-card__logo {
-  display: block;
-  width: min(140px, 50%);
-  height: auto;
-  margin: 0 auto 8px;
 }
 
 .auth-card__subtitle {
