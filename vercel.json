@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd my-academic-app && npm install && npm run build",
+  "outputDirectory": "my-academic-app/dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
