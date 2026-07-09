@@ -120,6 +120,16 @@ export function TrendIcon() {
   );
 }
 
+export function BrainIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+      <path d="M9.5 2.5a3 3 0 0 0-3 3v.28A3.5 3.5 0 0 0 4.5 9v.5a3 3 0 0 0-1 5.6 3.5 3.5 0 0 0 3 5.15c.3 0 .58-.04.85-.11A2.5 2.5 0 0 0 9.5 22a2.5 2.5 0 0 0 2.5-2.5v-14a3 3 0 0 0-2.5-3z" />
+      <path d="M14.5 2.5a3 3 0 0 1 3 3v.28A3.5 3.5 0 0 1 19.5 9v.5a3 3 0 0 1 1 5.6 3.5 3.5 0 0 1-3 5.15c-.3 0-.58-.04-.85-.11A2.5 2.5 0 0 1 14.5 22a2.5 2.5 0 0 1-2.5-2.5v-14a3 3 0 0 1 2.5-3z" />
+      <path d="M9.5 9.25h1.5M9 13.25h2.5M9.5 17.25h1.5M13 9.25h1.5M13.5 13.25H16M13 17.25h1.5" />
+    </svg>
+  );
+}
+
 export function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20">

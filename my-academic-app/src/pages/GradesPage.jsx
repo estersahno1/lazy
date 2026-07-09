@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { TrashIcon, EditIcon } from '../components/Icons';
 import { SEMESTER_OPTIONS, YEAR_OPTIONS, semesterVariant } from '../utils/courseUtils';
 import CourseNameInput from '../components/CourseNameInput';
+import Modal from '../components/Modal';
 import { useSectionReveal } from '../utils/useSectionReveal';
 
 const emptyForm = {
@@ -18,6 +19,100 @@ const SEMESTER_GROUPS = [
   { key: "ב'", label: 'סמסטר ב׳', variant: 'pink' },
   { key: 'קיץ', label: 'סמסטר קיץ', variant: 'summer' },
 ];
+
+function CourseFormFields({ idPrefix, values, onFieldChange, onCourseNameChange, courseNameSuggestions }) {
+  return (
+    <>
+      <label className="form-label" htmlFor={`${idPrefix}-name`}>
+        שם הקורס
+      </label>
+      <CourseNameInput
+        id={`${idPrefix}-name`}
+        value={values.courseName}
+        onChange={onCourseNameChange}
+        suggestions={courseNameSuggestions}
+        placeholder="שם הקורס"
+        required
+      />
+      <p className="form-hint">שמות קורסים מהמערכת יוצעו אוטומטית לשמירה על אחידות</p>
+      <div className="form-row">
+        <div className="form-field">
+          <label className="form-label" htmlFor={`${idPrefix}-credits`}>
+            נקודות זכות (נ״ז)
+          </label>
+          <input
+            id={`${idPrefix}-credits`}
+            className="form-input"
+            name="credits"
+            placeholder="נ״ז"
+            type="number"
+            min="1"
+            max="10"
+            value={values.credits}
+            onChange={onFieldChange}
+            required
+          />
+        </div>
+        <div className="form-field">
+          <label className="form-label" htmlFor={`${idPrefix}-grade`}>
+            ציון (אופציונלי)
+          </label>
+          <input
+            id={`${idPrefix}-grade`}
+            className="form-input"
+            name="grade"
+            placeholder="טרם הוזן"
+            type="number"
+            min="0"
+            max="100"
+            value={values.grade}
+            onChange={onFieldChange}
+          />
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-field">
+          <label className="form-label" htmlFor={`${idPrefix}-semester`}>
+            סמסטר
+          </label>
+          <select
+            id={`${idPrefix}-semester`}
+            className="form-input"
+            name="semester"
+            value={values.semester}
+            onChange={onFieldChange}
+            required
+          >
+            {SEMESTER_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                סמסטר {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-field">
+          <label className="form-label" htmlFor={`${idPrefix}-year`}>
+            שנה
+          </label>
+          <select
+            id={`${idPrefix}-year`}
+            className="form-input"
+            name="year"
+            value={values.year}
+            onChange={onFieldChange}
+            required
+          >
+            {YEAR_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </>
+  );
+}
 
 function GradesPage() {
   const {
@@ -36,51 +131,54 @@ function GradesPage() {
   } = useApp();
 
   const [form, setForm] = useState(emptyForm);
+  const [editForm, setEditForm] = useState(emptyForm);
   const [yearFilter, setYearFilter] = useState('all');
   const [gpaSemester, setGpaSemester] = useState("א'");
   const [gpaYear, setGpaYear] = useState("שנה א'");
 
   useEffect(() => {
-    if (editingCourseId) {
-      const course = courses.find((c) => c.id === editingCourseId);
-      if (course) {
-        setForm({
-          courseName: course.course_name,
-          credits: String(course.credits ?? course.weight ?? ''),
-          grade: String(course.grade ?? course.score ?? ''),
-          semester: course.semester || "א'",
-          year: course.year || "שנה א'",
-        });
-      }
-    } else {
-      setForm(emptyForm);
-    }
+    if (!editingCourseId) return;
+    const course = courses.find((c) => c.id === editingCourseId);
+    if (!course) return;
+    const rawGrade = course.grade ?? course.score;
+    setEditForm({
+      courseName: course.course_name,
+      credits: String(course.credits ?? course.weight ?? ''),
+      grade: rawGrade == null ? '' : String(rawGrade),
+      semester: course.semester || "א'",
+      year: course.year || "שנה א'",
+    });
   }, [editingCourseId, courses]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const handleEditChange = (e) => {
+    setEditForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const buildPayload = (values) => ({
+    course_name: values.courseName.trim(),
+    score: values.grade.trim() === '' ? null : Number(values.grade),
+    weight: Number(values.credits) || 0,
+    semester: values.semester,
+    year: values.year,
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    const payload = {
-      course_name: form.courseName.trim(),
-      score: Number(form.grade) || 0,
-      weight: Number(form.credits) || 0,
-      semester: form.semester,
-      year: form.year,
-    };
-    if (editingCourseId) {
-      updateCourse(editingCourseId, payload);
-    } else {
-      addCourse(payload);
-    }
+    addCourse(buildPayload(form));
     setForm(emptyForm);
+  };
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    updateCourse(editingCourseId, buildPayload(editForm));
   };
 
   const handleCancelEdit = () => {
     setEditingCourse(null);
-    setForm(emptyForm);
   };
 
   const handleDeleteCourse = (course) => {
@@ -185,107 +283,41 @@ function GradesPage() {
       <div className="page__form section-reveal" ref={registerReveal}>
       <form className="form-card form-card--grades" onSubmit={handleSubmit}>
         <div className="form-card__header">
-          <span className="form-card__icon">{editingCourseId ? '✎' : '+'}</span>
-          {editingCourseId ? 'עריכת קורס' : 'הוספת ציון חדש'}
+          <span className="form-card__icon">+</span>
+          הוספת ציון חדש
         </div>
-        <label className="form-label" htmlFor="course-name">
-          שם הקורס
-        </label>
-        <CourseNameInput
-          id="course-name"
-          value={form.courseName}
-          onChange={(courseName) => setForm((prev) => ({ ...prev, courseName }))}
-          suggestions={courseNameSuggestions}
-          placeholder="שם הקורס"
-          required
+        <CourseFormFields
+          idPrefix="course"
+          values={form}
+          onFieldChange={handleChange}
+          onCourseNameChange={(courseName) => setForm((prev) => ({ ...prev, courseName }))}
+          courseNameSuggestions={courseNameSuggestions}
         />
-        <p className="form-hint">שמות קורסים מהמערכת יוצעו אוטומטית לשמירה על אחידות</p>
-        <div className="form-row">
-          <div className="form-field">
-            <label className="form-label" htmlFor="course-credits">
-              נקודות זכות (נ״ז)
-            </label>
-            <input
-              id="course-credits"
-              className="form-input"
-              name="credits"
-              placeholder="נ״ז"
-              type="number"
-              min="1"
-              max="10"
-              value={form.credits}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="form-field">
-            <label className="form-label" htmlFor="course-grade">
-              ציון
-            </label>
-            <input
-              id="course-grade"
-              className="form-input"
-              name="grade"
-              placeholder="ציון"
-              type="number"
-              min="0"
-              max="100"
-              value={form.grade}
-              onChange={handleChange}
-              required
-            />
-          </div>
-        </div>
-        <div className="form-row">
-          <div className="form-field">
-            <label className="form-label" htmlFor="course-semester">
-              סמסטר
-            </label>
-            <select
-              id="course-semester"
-              className="form-input"
-              name="semester"
-              value={form.semester}
-              onChange={handleChange}
-              required
-            >
-              {SEMESTER_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>
-                  סמסטר {opt}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="form-field">
-            <label className="form-label" htmlFor="course-year">
-              שנה
-            </label>
-            <select
-              id="course-year"
-              className="form-input"
-              name="year"
-              value={form.year}
-              onChange={handleChange}
-              required
-            >
-              {YEAR_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
         <button type="submit" className="btn btn-primary">
-          {editingCourseId ? 'שמור שינויים' : '+ הוסף ציון'}
+          + הוסף ציון
         </button>
-        {editingCourseId && (
-          <button type="button" className="btn btn-outline-cancel" onClick={handleCancelEdit}>
-            ביטול
-          </button>
-        )}
       </form>
       </div>
+
+      <Modal
+        open={Boolean(editingCourseId)}
+        onClose={handleCancelEdit}
+        title="עריכת קורס"
+        size="form"
+      >
+        <form className="modal-form" onSubmit={handleEditSubmit}>
+          <CourseFormFields
+            idPrefix="edit-course"
+            values={editForm}
+            onFieldChange={handleEditChange}
+            onCourseNameChange={(courseName) => setEditForm((prev) => ({ ...prev, courseName }))}
+            courseNameSuggestions={courseNameSuggestions}
+          />
+          <button type="submit" className="btn btn-primary modal-form__submit">
+            שמור שינויים
+          </button>
+        </form>
+      </Modal>
 
       <div className="page__courses section-reveal" ref={registerReveal}>
       <div className="section-header">
@@ -330,7 +362,7 @@ function GradesPage() {
                     <div>
                       <p className="course-card__title">{course.course_name}</p>
                       <p className="course-card__meta">
-                        ציון: {course.score ?? course.grade} | {course.weight ?? course.credits} נ״ז
+                        ציון: {(course.score ?? course.grade) != null ? (course.score ?? course.grade) : 'טרם הוזן'} | {course.weight ?? course.credits} נ״ז
                         | {course.year} · סמסטר {course.semester}
                       </p>
                     </div>

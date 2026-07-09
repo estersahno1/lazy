@@ -941,7 +941,7 @@ export function AppProvider({ children }) {
       const gradeRecord = normalizeGrade({
         id: courseId + 1,
         course_id: courseId,
-        score: Number(score ?? grade) || 0,
+        score: score ?? grade ?? null,
         weight: Number(weight ?? credits) || 0,
       });
       return {
@@ -978,7 +978,7 @@ export function AppProvider({ children }) {
             g.course_id === Number(id)
               ? normalizeGrade({
                   ...g,
-                  score: Number(score ?? grade ?? g.score) || 0,
+                  score: score ?? grade ?? null,
                   weight: Number(weight ?? credits ?? g.weight) || 0,
                 })
               : g
@@ -988,7 +988,7 @@ export function AppProvider({ children }) {
             normalizeGrade({
               id: Date.now(),
               course_id: id,
-              score: Number(score ?? grade) || 0,
+              score: score ?? grade ?? null,
               weight: Number(weight ?? credits) || 0,
             }),
           ];

@@ -1101,20 +1101,23 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .home-hero--v2 .home-hero__visual {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .home-hero--v2 .home-hero__glass-card {
+    width: 100%;
+  }
+
   .home-hero--v2 .home-hero__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-.home-hero--v2 .home-hero__focus-card {
+  .home-hero--v2 .home-hero__focus-card {
     position: static;
     width: 100%;
     margin-top: var(--space-2);
-  }
-}
-
-@media (max-width: 520px) {
-  .home-hero--v2 .home-hero__metrics {
-    grid-template-columns: 1fr;
   }
 }
 

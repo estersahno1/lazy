@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { BookIcon, CalendarIcon, CalendarPlusIcon, TrashIcon } from '../components/Icons';
+import { BrainIcon, CalendarIcon, CalendarPlusIcon, TrashIcon } from '../components/Icons';
 import Modal from '../components/Modal';
 import WeekPlannerGrid from '../components/WeekPlannerGrid';
 import CourseNameInput from '../components/CourseNameInput';
@@ -104,7 +104,7 @@ function TaskSlide({
     <div className="ai-carousel__slide">
       <div className="task-overview">
         <div className="task-overview__icon">
-          <BookIcon />
+          <BrainIcon />
         </div>
         <div className="task-overview__content">
           <p className="task-overview__title">{task.title}</p>

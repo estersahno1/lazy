@@ -1,10 +1,12 @@
 import { sameUserId } from './courseUtils';
 
 export function normalizeGrade(grade) {
+  const rawScore = grade.score;
+  const hasScore = rawScore !== null && rawScore !== undefined && rawScore !== '';
   return {
     id: Number(grade.id) || Date.now(),
     course_id: Number(grade.course_id),
-    score: Math.min(100, Math.max(0, Number(grade.score) || 0)),
+    score: hasScore ? Math.min(100, Math.max(0, Number(rawScore))) : null,
     weight: Math.max(0, Number(grade.weight ?? grade.credits) || 0),
   };
 }
@@ -25,7 +27,7 @@ export function getGradeForCourse(grades, courseId) {
 }
 
 export function calcGpaFromGrades(grades, courses, userId) {
-  const userGrades = gradesForUser(grades, userId, courses);
+  const userGrades = gradesForUser(grades, userId, courses).filter((g) => g.score != null);
   if (!userGrades.length) return '0.0';
   const total = userGrades.reduce((sum, g) => sum + g.score * g.weight, 0);
   const credits = userGrades.reduce((sum, g) => sum + g.weight, 0);
@@ -45,8 +47,8 @@ export function calcGpaForFilter(grades, courses, userId, { year, semester } = {
       })
       .map((c) => Number(c.id))
   );
-  const filteredGrades = gradesForUser(grades, userId, courses).filter((g) =>
-    filteredCourseIds.has(g.course_id)
+  const filteredGrades = gradesForUser(grades, userId, courses).filter(
+    (g) => filteredCourseIds.has(g.course_id) && g.score != null
   );
   if (!filteredGrades.length) return '0.0';
   const total = filteredGrades.reduce((sum, g) => sum + g.score * g.weight, 0);
@@ -60,12 +62,13 @@ export function enrichCoursesWithGrades(courses, grades, userId) {
   );
   return userCourses.map((course) => {
     const grade = getGradeForCourse(grades, course.id);
+    const score = grade ? grade.score : (course.grade != null ? Number(course.grade) : null);
     return {
       ...course,
-      score: grade?.score ?? Number(course.grade) ?? 0,
+      score,
       weight: grade?.weight ?? Number(course.credits) ?? 0,
       gradeId: grade?.id ?? null,
-      grade: grade?.score ?? Number(course.grade) ?? 0,
+      grade: score,
       credits: grade?.weight ?? Number(course.credits) ?? 0,
     };
   });

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { SparklesIcon, BookIcon, CalendarIcon, TrendIcon } from './Icons';
+import { SparklesIcon, BrainIcon, CalendarIcon, TrendIcon } from './Icons';
 
 function buildSteps(firstName) {
   return [
@@ -14,7 +14,7 @@ function buildSteps(firstName) {
     },
     {
       key: 'tasks',
-      icon: BookIcon,
+      icon: BrainIcon,
       eyebrow: 'שלב 1',
       title: 'מפרק המשימות',
       text: 'מעלים מטלה או קובץ, והבינה המלאכותית מפרקת אותה לצעדים קטנים עם תאריכי יעד ריאליים.',

@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import { HomeIcon, SparklesIcon, CalendarIcon, ChartIcon } from './Icons';
+import { HomeIcon, BrainIcon, CalendarIcon, ChartIcon } from './Icons';
 
 const navItems = [
   { to: '/', label: 'בית', icon: HomeIcon, end: true },
-  { to: '/tasks', label: 'מפרק משימות', icon: SparklesIcon },
+  { to: '/tasks', label: 'מפרק משימות', icon: BrainIcon },
   { to: '/schedule', label: 'מערכת שעות', icon: CalendarIcon },
   { to: '/grades', label: 'ציונים', icon: ChartIcon },
 ];
