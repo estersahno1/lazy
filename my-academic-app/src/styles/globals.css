@@ -994,6 +994,16 @@ body {
   border-color: rgba(255, 255, 255, 0.32);
 }
 
+/* Breathing room between the hero, cards row, status, and urgent-tasks
+   blocks on the homepage — they previously only got the 16px margin
+   baked into .card, which read as cramped between visually distinct
+   dark-glass sections, especially on mobile. */
+.page--home .page__cards,
+.page--home .page__status,
+.page--home .page__urgent {
+  margin-bottom: var(--space-4);
+}
+
 /* Status Section */
 .page--home .page__status .card.status-card {
   background: linear-gradient(145deg, rgba(26, 16, 64, 0.5), rgba(45, 27, 105, 0.3));
