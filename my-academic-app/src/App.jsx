@@ -3,6 +3,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import AppHeader from './components/AppHeader';
 import BottomNav from './components/BottomNav';
 import Toast from './components/Toast';
+import OnboardingTour from './components/OnboardingTour';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import TaskManagerPage from './pages/TaskManagerPage';
@@ -23,6 +24,7 @@ function AppShell() {
         </Routes>
       </main>
       <Toast />
+      <OnboardingTour />
     </div>
   );
 }

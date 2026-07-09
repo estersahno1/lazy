@@ -7,8 +7,14 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   name text not null default '',
   institution text not null default '',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  onboarding_completed boolean not null default false
 );
+
+-- אם כבר הרצת את הקובץ הזה בעבר (לפני שנוסף onboarding_completed), השורה
+-- הבאה מוסיפה את העמודה בלי לגעת בשאר הטבלה. אפשר להריץ אותה גם אם היא
+-- כבר קיימת — היא לא תעשה כלום במקרה כזה.
+alter table public.profiles add column if not exists onboarding_completed boolean not null default false;
 
 alter table public.profiles enable row level security;
 

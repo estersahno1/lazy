@@ -4180,6 +4180,295 @@ body {
   cursor: not-allowed;
 }
 
+/* Onboarding tour — mobile: full-screen single column; desktop: split panel
+   matching the Auth page's showcase/card pattern for visual consistency */
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--color-surface);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.onboarding-modal {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.onboarding-panel--visual {
+  display: none;
+}
+
+.onboarding-panel--content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  padding: var(--space-3);
+  padding-top: calc(var(--space-4) + var(--safe-bottom, 0px));
+  padding-bottom: calc(var(--space-3) + var(--safe-bottom, 0px));
+}
+
+.onboarding-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: var(--space-3);
+}
+
+.onboarding-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-border);
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.onboarding-dot--active {
+  background: var(--gradient-accent);
+  transform: scale(1.3);
+}
+
+.onboarding-carousel {
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.onboarding-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  direction: ltr;
+  transition: transform 0.4s ease;
+}
+
+.onboarding-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
+  box-sizing: border-box;
+  direction: rtl;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  padding: 0 var(--space-2);
+}
+
+.onboarding-slide__icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background: var(--gradient-hero);
+  color: #fff;
+  margin-bottom: var(--space-3);
+}
+
+.onboarding-eyebrow {
+  display: inline-block;
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-primary);
+  margin-bottom: var(--space-1);
+}
+
+.onboarding-title {
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  margin-bottom: var(--space-2);
+  line-height: 1.3;
+}
+
+.onboarding-text {
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  max-width: 420px;
+}
+
+.onboarding-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.onboarding-nav__back {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.onboarding-nav__actions {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.onboarding-nav__primary {
+  width: 100%;
+}
+
+.onboarding-skip {
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  padding: var(--space-1);
+  cursor: pointer;
+  text-align: center;
+}
+
+.onboarding-skip:hover {
+  color: var(--color-text);
+}
+
+@media (min-width: 1024px) {
+  .onboarding-overlay {
+    align-items: center;
+    background: rgba(20, 14, 40, 0.55);
+    padding: var(--space-4);
+  }
+
+  .onboarding-modal {
+    max-width: 900px;
+    max-height: min(640px, calc(100vh - var(--space-4) * 2));
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    flex-direction: row;
+    box-shadow: var(--shadow-glass-lg);
+  }
+
+  .onboarding-panel--visual {
+    display: flex;
+    position: relative;
+    overflow: hidden;
+    flex: 1 1 40%;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: var(--space-3);
+    background: var(--gradient-hero);
+    color: #fff;
+  }
+
+  .onboarding-panel__glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+  }
+
+  .onboarding-panel__glow--a {
+    width: 320px;
+    height: 320px;
+    top: -100px;
+    inset-inline-end: -80px;
+    background: radial-gradient(circle, rgba(147, 108, 255, 0.35) 0%, transparent 70%);
+  }
+
+  .onboarding-panel__glow--b {
+    width: 280px;
+    height: 280px;
+    bottom: -100px;
+    inset-inline-start: -80px;
+    background: radial-gradient(circle, rgba(255, 154, 108, 0.18) 0%, transparent 70%);
+  }
+
+  .onboarding-panel__icon {
+    position: relative;
+    z-index: 1;
+    width: 96px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .onboarding-panel__icon svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .onboarding-panel__dots {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 8px;
+  }
+
+  .onboarding-panel__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .onboarding-panel__dot--active {
+    background: #fff;
+    transform: scale(1.3);
+  }
+
+  .onboarding-panel--content {
+    flex: 1 1 60%;
+    padding: var(--space-4) clamp(24px, 4vw, 48px);
+    justify-content: center;
+  }
+
+  .onboarding-slide {
+    align-items: flex-start;
+    text-align: right;
+  }
+
+  .onboarding-slide__icon {
+    display: none;
+  }
+
+  .onboarding-text {
+    max-width: none;
+  }
+
+  .onboarding-nav {
+    margin-top: var(--space-4);
+  }
+
+  .onboarding-nav__actions {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .onboarding-nav__primary {
+    width: auto;
+    min-width: 240px;
+  }
+}
+
 /* Grades page — year filter & semester groups */
 .year-filter {
   display: flex;

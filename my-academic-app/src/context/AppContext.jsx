@@ -55,6 +55,7 @@ import {
   supabaseLogout,
   supabaseUpdateProfile,
   supabaseDeleteAccount,
+  supabaseCompleteOnboarding,
 } from '../services/supabaseAuth';
 import {
   loadAppStateFromSupabase,
@@ -587,6 +588,7 @@ export function AppProvider({ children }) {
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [editingEventId, setEditingEventId] = useState(null);
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (!isSupabaseEnabled) return undefined;
@@ -644,6 +646,13 @@ export function AppProvider({ children }) {
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (currentStudent && !currentStudent.hasCompletedOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, [currentStudent, authLoading]);
 
   const showToast = (message) => {
     setToast(message);
@@ -779,6 +788,17 @@ export function AppProvider({ children }) {
     setCurrentStudent(result.student);
     setShowProfileEdit(false);
     showToast('הפרופיל עודכן!');
+  };
+
+  const completeOnboarding = () => {
+    if (!currentStudent) return;
+    setShowOnboarding(false);
+    setCurrentStudent((prev) => (prev ? { ...prev, hasCompletedOnboarding: true } : prev));
+    if (isSupabaseEnabled && !isLocalDemoStudent(currentStudent)) {
+      supabaseCompleteOnboarding(currentStudent.id);
+    } else {
+      updateStudentRecord(currentStudent.id, { hasCompletedOnboarding: true });
+    }
   };
 
   const clearAuthError = () => setAuthError('');
@@ -1636,6 +1656,8 @@ export function AppProvider({ children }) {
     deleteAccount,
     authError,
     clearAuthError,
+    showOnboarding,
+    completeOnboarding,
     addCourse,
     updateCourse,
     deleteCourse,

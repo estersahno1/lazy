@@ -9,6 +9,7 @@ export function normalizeStudent(student) {
     institution: student.institution ?? '',
     created_at: student.created_at ?? todayIso(),
     password: student.password ?? '',
+    hasCompletedOnboarding: student.hasCompletedOnboarding ?? false,
   };
 }
 
@@ -184,6 +185,7 @@ export function ensureDemoStudentAccount() {
       institution: 'הקריה האקדמית אונו',
       created_at: todayIso(),
       password: DEMO_USER_PASSWORD,
+      hasCompletedOnboarding: true,
     });
     students.push(demo);
     saveStudents(students);
@@ -194,7 +196,8 @@ export function ensureDemoStudentAccount() {
   const needsUpdate =
     current.name !== 'דנה כהן' ||
     current.institution !== 'הקריה האקדמית אונו' ||
-    current.password !== DEMO_USER_PASSWORD;
+    current.password !== DEMO_USER_PASSWORD ||
+    current.hasCompletedOnboarding !== true;
 
   if (needsUpdate) {
     students[demoIndex] = normalizeStudent({
@@ -202,6 +205,7 @@ export function ensureDemoStudentAccount() {
       name: 'דנה כהן',
       institution: 'הקריה האקדמית אונו',
       password: DEMO_USER_PASSWORD,
+      hasCompletedOnboarding: true,
     });
     saveStudents(students);
   }

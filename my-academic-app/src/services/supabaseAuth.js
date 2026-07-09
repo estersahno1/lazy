@@ -7,6 +7,7 @@ function toStudent(sessionUser, profile) {
     email: sessionUser.email ?? '',
     institution: profile?.institution ?? sessionUser.user_metadata?.institution ?? '',
     created_at: profile?.created_at?.slice?.(0, 10) ?? new Date().toISOString().slice(0, 10),
+    hasCompletedOnboarding: profile?.onboarding_completed ?? false,
   };
 }
 
@@ -20,7 +21,7 @@ export async function getSupabaseSession() {
 export async function fetchSupabaseStudent(session) {
   const { data: profile } = await supabase
     .from('profiles')
-    .select('name, institution, created_at')
+    .select('name, institution, created_at, onboarding_completed')
     .eq('id', session.user.id)
     .maybeSingle();
   return toStudent(session.user, profile);
@@ -80,6 +81,14 @@ export async function supabaseRegister({ name, email, institution, password }) {
 
 export async function supabaseLogout() {
   await supabase.auth.signOut();
+}
+
+export async function supabaseCompleteOnboarding(userId) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ onboarding_completed: true })
+    .eq('id', userId);
+  if (error) console.warn('Failed to persist onboarding completion:', error);
 }
 
 export async function supabaseUpdateProfile(userId, updates) {
