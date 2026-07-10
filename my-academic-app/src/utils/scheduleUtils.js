@@ -73,10 +73,7 @@ export function isBeforeToday(dateStr) {
 }
 
 export function getTodayAcademicDayIndex() {
-  const d = new Date().getDay();
-  if (d === 6) return 0;
-  if (d === 5) return 4;
-  return Math.min(d, 4);
+  return new Date().getDay();
 }
 
 export function getSundayOfWeek(weekOffset = 0) {
@@ -92,7 +89,7 @@ const MONTH_NAMES = [
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר',
 ];
 
-const HEBREW_DAYS = ["א'", "ב'", "ג'", "ד'", "ה'"];
+const HEBREW_DAYS = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"];
 
 export function getWeekDays(weekOffset = 0) {
   const sunday = getSundayOfWeek(weekOffset);
@@ -186,7 +183,7 @@ function collectEvents(scheduleByDay, filterFn) {
   const todayIdx = getTodayAcademicDayIndex();
 
   const all = [];
-  for (let d = 0; d <= 4; d++) {
+  for (let d = 0; d <= 6; d++) {
     (scheduleByDay[d] || []).forEach((ev) => {
       const normalized = normalizeEvent(ev);
       if (filterFn && !filterFn(normalized)) return;
@@ -208,7 +205,7 @@ function collectEvents(scheduleByDay, filterFn) {
   return { chosen: upcoming || all[0], todayIdx, all };
 }
 
-const DAY_NAMES = ["יום א'", "יום ב'", "יום ג'", "יום ד'", "יום ה'"];
+const DAY_NAMES = ["יום א'", "יום ב'", "יום ג'", "יום ד'", "יום ה'", "יום ו'", "יום שבת"];
 
 function formatEventSummary(chosen, todayIdx) {
   if (!chosen) {
@@ -311,60 +308,23 @@ const SCHEDULE_SPAN_MINUTES = SCHEDULE_END_MINUTES - SCHEDULE_START_MINUTES;
 
 export function dateToAcademicDayIndex(dateStr) {
   const d = new Date(`${dateStr}T12:00:00`);
-  const day = d.getDay();
-  if (day === 6) return 0;
-  if (day === 5) return 4;
-  return Math.min(day, 4);
+  return d.getDay();
 }
 
 export function addAcademicDays(dateStr, days) {
   const d = new Date(`${dateStr}T12:00:00`);
-  let added = 0;
-  while (added < days) {
-    d.setDate(d.getDate() + 1);
-    const wd = d.getDay();
-    if (wd !== 5 && wd !== 6) added += 1;
-  }
+  d.setDate(d.getDate() + days);
   return formatLocalDate(d);
 }
 
 export function offsetAcademicDays(dateStr, offset) {
-  if (offset >= 0) return addAcademicDays(dateStr, offset);
-  const d = new Date(`${dateStr}T12:00:00`);
-  let remaining = Math.abs(offset);
-  while (remaining > 0) {
-    d.setDate(d.getDate() - 1);
-    const wd = d.getDay();
-    if (wd !== 5 && wd !== 6) remaining -= 1;
-  }
-  return formatLocalDate(d);
+  return addAcademicDays(dateStr, offset);
 }
 
 export function getDayIndexForScheduleDate(scheduledDate, weekOffset = 0) {
   const { days } = getWeekDays(weekOffset);
   const idx = days.findIndex((d) => d.date === scheduledDate);
   return idx >= 0 ? idx : dateToAcademicDayIndex(scheduledDate);
-}
-
-/** האם התאריך נופל בתוך שבוע הלו"ז המוצג (לא שבועות עתידיים) */
-export function isDateInWeekView(dateStr, weekOffset = 0) {
-  if (!dateStr) return false;
-  const { days } = getWeekDays(weekOffset);
-  const weekStart = days[0]?.date;
-  const weekEnd = days[days.length - 1]?.date;
-  if (!weekStart || !weekEnd) return false;
-  const d = dateStr.split('T')[0];
-  return d >= weekStart && d <= weekEnd;
-}
-
-/** שיבוץ ביומן רק כשהתאריך בשבוע הנוכחי או בעבר (באיחור) */
-export function shouldScheduleSubtaskOnCalendar(dateStr, weekOffset = 0) {
-  if (!dateStr) return false;
-  const d = dateStr.split('T')[0];
-  const today = todayLocalDate();
-  if (d < today) return isDateInWeekView(today, weekOffset);
-  if (d === today) return true;
-  return isDateInWeekView(d, weekOffset);
 }
 
 export function durationToHeight(durationMinutes) {

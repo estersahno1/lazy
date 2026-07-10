@@ -1,14 +1,14 @@
 import { supabase, isSupabaseEnabled } from '../lib/supabase';
 
 function createEmptySchedule() {
-  return { 0: [], 1: [], 2: [], 3: [], 4: [] };
+  return { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
 }
 
 function scheduleFromRows(rows) {
   const scheduleByDay = createEmptySchedule();
   (rows || []).forEach((row) => {
     const day = row.day_index;
-    if (day == null || day < 0 || day > 4) return;
+    if (day == null || day < 0 || day > 6) return;
     scheduleByDay[day].push({
       id: row.id,
       title: row.title,
@@ -25,7 +25,7 @@ function scheduleFromRows(rows) {
 
 function scheduleToRows(userId, scheduleByDay) {
   const rows = [];
-  for (let d = 0; d <= 4; d++) {
+  for (let d = 0; d <= 6; d++) {
     (scheduleByDay[d] || []).forEach((ev) => {
       rows.push({
         id: String(ev.id),

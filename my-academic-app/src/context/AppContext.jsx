@@ -12,7 +12,6 @@ import {
   todayLocalDate,
   getDayIndexForScheduleDate,
   getWeekOffsetForDate,
-  shouldScheduleSubtaskOnCalendar,
   weeksUntilDeadline,
   durationToHeight,
   findFreeTimeSlot,
@@ -136,7 +135,7 @@ const defaultAiTasks = buildDefaultAiTasks();
 
 function normalizeSchedule(scheduleByDay) {
   const result = {};
-  for (let d = 0; d <= 4; d++) {
+  for (let d = 0; d <= 6; d++) {
     result[d] = (scheduleByDay[d] || []).map(normalizeEvent);
   }
   return result;
@@ -209,7 +208,7 @@ function minutesToTimeString(minutes) {
 
 function removeEventFromSchedule(scheduleByDay, eventId) {
   const next = { ...scheduleByDay };
-  for (let d = 0; d <= 4; d++) {
+  for (let d = 0; d <= 6; d++) {
     next[d] = (next[d] || []).filter((e) => e.id !== eventId);
   }
   return next;
@@ -274,7 +273,7 @@ function buildAiStepBlock(taskId, subtask, dayBlocks, weekOffset = 0) {
 function removeTaskBlocksFromSchedule(scheduleByDay, taskId) {
   const next = { ...scheduleByDay };
   const idStr = String(taskId);
-  for (let d = 0; d <= 4; d++) {
+  for (let d = 0; d <= 6; d++) {
     next[d] = (next[d] || []).filter((e) => String(e.taskId) !== idStr);
   }
   return next;
@@ -344,10 +343,6 @@ function scheduleTaskSteps(task, scheduleByDay, weekOffset = 0) {
       nextSchedule = removeEventFromSchedule(nextSchedule, subtask.scheduleEventId);
     }
 
-    if (!shouldScheduleSubtaskOnCalendar(dateStr, weekOffset)) {
-      return normalizeSubtask({ ...subtask, scheduleEventId: null }, task.id);
-    }
-
     const dayIndex = getDayIndexForScheduleDate(dateStr, weekOffset);
     const dayBlocks = nextSchedule[dayIndex] || [];
     const { block, eventId, allocatedTime } = buildAiStepBlock(
@@ -380,7 +375,7 @@ function scheduleTaskSteps(task, scheduleByDay, weekOffset = 0) {
 }
 
 function createEmptySchedule() {
-  return { 0: [], 1: [], 2: [], 3: [], 4: [] };
+  return { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
 }
 
 function createFreshAppState() {
@@ -1428,7 +1423,7 @@ export function AppProvider({ children }) {
         const eventId = `ai-${taskId}-${stepId}-${Date.now()}`;
         let scheduleEventId = null;
 
-        if (task.approved && shouldScheduleSubtaskOnCalendar(dateStr, prev.weekOffset)) {
+        if (task.approved) {
           const title = step.subtask_title || extractSubtaskTitle(step);
           const newBlock = makeEventBlock({
             id: eventId,

@@ -273,7 +273,7 @@ export function splitTaskFromContent({
   );
   const parentId = Number(taskId) || Date.now();
   const today = todayLocalDate();
-  const endDate = deadline && !isBeforeToday(deadline) ? deadline : offsetAcademicDays(today, totalWeeks * 5);
+  const endDate = deadline && !isBeforeToday(deadline) ? deadline : offsetAcademicDays(today, totalWeeks * 7);
   const startDate = today;
 
   let taskItems = Array.isArray(parsedItems) && parsedItems.length

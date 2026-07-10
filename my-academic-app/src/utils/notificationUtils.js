@@ -105,7 +105,7 @@ export function generateNotificationCandidates({
     });
   });
 
-  for (let dayIndex = 0; dayIndex <= 4; dayIndex++) {
+  for (let dayIndex = 0; dayIndex <= 6; dayIndex++) {
     (scheduleByDay[dayIndex] || []).forEach((ev) => {
       if (!isExamEvent(ev)) return;
       const dateStr = getEventDate(ev, dayIndex, weekOffset);

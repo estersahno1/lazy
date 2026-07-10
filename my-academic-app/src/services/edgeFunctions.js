@@ -1,6 +1,6 @@
 import { supabase, isSupabaseEnabled } from '../lib/supabase'
 
-export async function parseTaskWithOpenAI(title, text) {
+export async function parseTaskWithAI(title, text) {
   if (!isSupabaseEnabled) {
     return { ok: false, error: 'Supabase לא מוגדר. הגדרי VITE_SUPABASE_URL ו-VITE_SUPABASE_ANON_KEY.' }
   }
@@ -15,11 +15,11 @@ export async function parseTaskWithOpenAI(title, text) {
     })
 
     if (error) {
-      return { ok: false, error: error.message || 'שגיאה בקריאה ל-OpenAI' }
+      return { ok: false, error: error.message || 'שגיאה בקריאה לשירות ה-AI' }
     }
 
     if (!data?.subtasks?.length) {
-      return { ok: false, error: 'לא התקבלו שלבים מ-OpenAI.' }
+      return { ok: false, error: 'לא התקבלו שלבים מהשירות.' }
     }
 
     const items = data.subtasks.map((s, i) => ({

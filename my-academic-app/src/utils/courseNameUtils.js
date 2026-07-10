@@ -18,7 +18,7 @@ export function getGradeCourseNames(courses = []) {
 export function collectCourseNames(courses = [], scheduleByDay = {}) {
   const names = new Set(getGradeCourseNames(courses));
 
-  for (let day = 0; day <= 4; day += 1) {
+  for (let day = 0; day <= 6; day += 1) {
     (scheduleByDay[day] || []).forEach((event) => {
       const type = event.type || 'lecture';
       if (!SCHEDULE_COURSE_TYPES.has(type)) return;

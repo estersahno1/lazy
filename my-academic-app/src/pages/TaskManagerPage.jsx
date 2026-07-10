@@ -6,12 +6,13 @@ import Modal from '../components/Modal';
 import WeekPlannerGrid from '../components/WeekPlannerGrid';
 import CourseNameInput from '../components/CourseNameInput';
 import { weeksUntilDeadline, formatDeadlineLabel, defaultWorkWeekIndices } from '../utils/scheduleUtils';
-import { extractDocumentText, isSupportedTaskFile } from '../utils/documentTextUtils';
-import { inferTaskTitle, previewParsedTasks, PARSE_STRATEGIES, PARSE_STRATEGY_LABELS } from '../utils/taskContentParser';
-import { parseTaskWithOpenAI } from '../services/edgeFunctions';
+import { isSupportedTaskFile } from '../utils/documentTextUtils';
+import { extractStructuredDocument } from '../utils/documentStructure';
+import { detectTitle } from '../utils/titleDetection';
 import { findCourseByName, getGradeCourseNames } from '../utils/courseNameUtils';
 import { formatDuration, formatAllocatedTime, getTaskSubtasks } from '../utils/taskSplitter';
 import { useSectionReveal } from '../utils/useSectionReveal';
+import { parseTaskWithAI } from '../services/edgeFunctions';
 
 const SPLIT_BUILD_MODES = {
   manual: 'manual',
@@ -314,7 +315,6 @@ function TaskManagerPage() {
   const [fromDocument, setFromDocument] = useState(false);
   const [parsedPreview, setParsedPreview] = useState([]);
   const [splitBuildMode, setSplitBuildMode] = useState(SPLIT_BUILD_MODES.manual);
-  const [aiStrategy, setAiStrategy] = useState(PARSE_STRATEGIES.parts);
   const [aiParsed, setAiParsed] = useState(false);
   const [selectedWeekIndices, setSelectedWeekIndices] = useState([]);
   const [tipIndex, setTipIndex] = useState(0);
@@ -322,7 +322,7 @@ function TaskManagerPage() {
   const touchStartX = useRef(0);
   const taskFileInputRef = useRef(null);
   const [fileLoading, setFileLoading] = useState(false);
-  const [openAiLoading, setOpenAiLoading] = useState(false);
+  const [aiServiceLoading, setAiServiceLoading] = useState(false);
   const registerReveal = useSectionReveal();
 
   const weeksLeft = weeksUntilDeadline(taskForm.deadline, taskForm.deadlineTime);
@@ -372,51 +372,30 @@ function TaskManagerPage() {
     setFromDocument(false);
     setParsedPreview([]);
     setSplitBuildMode(SPLIT_BUILD_MODES.manual);
-    setAiStrategy(PARSE_STRATEGIES.parts);
     setAiParsed(false);
     setSelectedWeekIndices([]);
   };
 
-  const runAiParse = () => {
+  const runAiServiceParse = async () => {
     if (!taskForm.description.trim()) {
       setFileError('אין טקסט לפירוק. העלי קובץ או הדביקי את נוסח המטלה.');
       return;
     }
-    const { items, ok } = previewParsedTasks(taskForm.description, aiStrategy);
-    if (!ok) {
-      setFileError(
-        'לא זוהו חלקים במסמך. נסי "לפי קבוצות לוגיות" או בני ידנית את השלבים.'
-      );
-      setParsedPreview([]);
-      setAiParsed(false);
-      return;
-    }
-    setParsedPreview(items);
-    setAiParsed(true);
-    setFileError('');
-    showToast(`פורקו ${items.length} שלבים — אפשר לערוך לפני האישור`);
-  };
-
-  const runOpenAiParse = async () => {
-    if (!taskForm.description.trim()) {
-      setFileError('אין טקסט לפירוק. העלי קובץ או הדביקי את נוסח המטלה.');
-      return;
-    }
-    setOpenAiLoading(true);
+    setAiServiceLoading(true);
     setFileError('');
     try {
-      const result = await parseTaskWithOpenAI(taskForm.title, taskForm.description);
+      const result = await parseTaskWithAI(taskForm.title, taskForm.description);
       if (!result.ok) {
-        setFileError(result.error || 'שגיאה בפירוק עם OpenAI');
+        setFileError(result.error || 'שגיאה בפירוק חכם');
         return;
       }
       setParsedPreview(result.items);
       setAiParsed(true);
-      showToast(`🧠 OpenAI פירקה ל-${result.items.length} שלבים`);
+      showToast(`🧠 פורקה המטלה ל-${result.items.length} שלבים`);
     } catch (err) {
       setFileError(err.message || 'שגיאה ברשת');
     } finally {
-      setOpenAiLoading(false);
+      setAiServiceLoading(false);
     }
   };
 
@@ -446,7 +425,7 @@ function TaskManagerPage() {
         setFileError('פורמט לא נתמך. העלי Word (docx), PDF או TXT (עד 2MB)');
         return;
       }
-      const text = await extractDocumentText(file);
+      const { text, lines } = await extractStructuredDocument(file);
       if (!text.trim()) {
         setFileError('לא נמצא טקסט בקובץ. נסי Word, TXT או הדביקי את הטקסט ידנית.');
         return;
@@ -455,9 +434,10 @@ function TaskManagerPage() {
       const nextDescription = taskForm.description
         ? `${taskForm.description}\n\n${text}`
         : text;
+      const { title: detectedTitle } = detectTitle(lines, text, baseName);
       setTaskForm((p) => ({
         ...p,
-        title: p.title || inferTaskTitle(text, baseName),
+        title: p.title || detectedTitle,
         description: nextDescription,
       }));
       setTaskFileName(file.name);
@@ -788,53 +768,20 @@ function TaskManagerPage() {
               </div>
 
               {splitBuildMode === SPLIT_BUILD_MODES.ai && (
-                <div className="split-mode__ai">
-                  <label className="form-label" htmlFor="ai-strategy">שיטת פירוק</label>
-                  <select
-                    id="ai-strategy"
-                    className="form-input form-input--full"
-                    value={aiStrategy}
-                    onChange={(e) => {
-                      setAiStrategy(e.target.value);
-                      setAiParsed(false);
-                      setParsedPreview([]);
-                    }}
-                  >
-                    <option value={PARSE_STRATEGIES.parts}>
-                      {PARSE_STRATEGY_LABELS.parts} — מומלץ
-                    </option>
-                    <option value={PARSE_STRATEGIES.grouped}>
-                      {PARSE_STRATEGY_LABELS.grouped}
-                    </option>
-                  </select>
-                  <p className="form-hint">
-                    {aiStrategy === PARSE_STRATEGIES.parts
-                      ? '3 שלבים לפי חלק ראשון (2 ש׳), שני (4 ש׳) ושלישי (2 ש׳).'
-                      : 'פירוק מפורט יותר לפי קבוצות דרישות (כמו במטלות ארוכות).'}
-                  </p>
+                <div className="split-mode__ai-service">
                   <button
                     type="button"
-                    className="btn btn-outline split-mode__ai-btn"
-                    onClick={runAiParse}
+                    className="btn btn-primary split-mode__ai-service-btn"
+                    onClick={runAiServiceParse}
+                    disabled={aiServiceLoading}
                   >
-                    ✨ פרק עם AI
+                    {aiServiceLoading ? 'מפרקת...' : '🧠 פירוק חכם עם AI'}
                   </button>
+                  <p className="form-hint">
+                    שימוש במודל שפה לפירוק חכם של המטלה לשלבים מותאמים אישית
+                  </p>
                 </div>
               )}
-
-              <div className="split-mode__openai">
-                <button
-                  type="button"
-                  className="btn btn-primary split-mode__openai-btn"
-                  onClick={runOpenAiParse}
-                  disabled={openAiLoading}
-                >
-                  {openAiLoading ? 'מפרקת...' : '🧠 פרק עם OpenAI (חכם)'}
-                </button>
-                <p className="form-hint">
-                  שימוש ב-OpenAI GPT לפירוק חכם של המטלה לשלבים מותאמים אישית
-                </p>
-              </div>
             </div>
           )}
 

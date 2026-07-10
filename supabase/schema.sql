@@ -171,7 +171,7 @@ create policy "subtasks: all via task"
 create table if not exists public.schedule_events (
   id text primary key,
   user_id uuid not null references public.profiles (id) on delete cascade,
-  day_index int check (day_index >= 0 and day_index <= 4),
+  day_index int check (day_index >= 0 and day_index <= 6),
   scheduled_date date,
   title text not null default '',
   room text not null default '',
@@ -180,6 +180,11 @@ create table if not exists public.schedule_events (
   duration_minutes int not null default 90,
   materials jsonb not null default '[]'::jsonb
 );
+
+-- אם כבר הרצת את הקובץ הזה בעבר (לפני שנוסף יום שישי/שבת), השורות הבאות
+-- מרחיבות את המגבלה מ-0-4 ל-0-6. אפשר להריץ אותן גם אם הן כבר קיימות.
+alter table public.schedule_events drop constraint if exists schedule_events_day_index_check;
+alter table public.schedule_events add constraint schedule_events_day_index_check check (day_index >= 0 and day_index <= 6);
 
 alter table public.schedule_events enable row level security;
 

@@ -81,7 +81,7 @@ function SchedulePage() {
   }, [weekDays]);
   const monthEventsByDate = useMemo(() => {
     const map = {};
-    for (let d = 0; d <= 4; d++) {
+    for (let d = 0; d <= 6; d++) {
       (scheduleByDay?.[d] || []).forEach((ev) => {
         if (!ev.scheduledDate) return;
         if (!map[ev.scheduledDate]) map[ev.scheduledDate] = [];
