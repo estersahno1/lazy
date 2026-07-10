@@ -98,6 +98,7 @@ create policy "grades: all via course"
 create table if not exists public.urgent_tasks (
   id bigint primary key,
   user_id uuid not null references public.profiles (id) on delete cascade,
+  course_id bigint references public.courses (id) on delete set null,
   title text not null default '',
   deadline date,
   deadline_time text not null default '23:59',
@@ -105,6 +106,10 @@ create table if not exists public.urgent_tasks (
   priority text not null default 'medium',
   completed boolean not null default false
 );
+
+-- תאימות לסכמות ישנות: מוסיף course_id אם חסר
+alter table public.urgent_tasks
+  add column if not exists course_id bigint references public.courses (id) on delete set null;
 
 alter table public.urgent_tasks enable row level security;
 
@@ -118,6 +123,7 @@ create policy "urgent_tasks: all own"
 create table if not exists public.ai_tasks (
   id bigint primary key,
   user_id uuid not null references public.profiles (id) on delete cascade,
+  course_id bigint references public.courses (id) on delete set null,
   title text not null default '',
   deadline date,
   deadline_time text not null default '23:59',
@@ -130,11 +136,16 @@ create table if not exists public.ai_tasks (
   selected_week_indices int[] not null default '{}'
 );
 
+-- תאימות לסכמות ישנות: מוסיף course_id אם חסר
+alter table public.ai_tasks
+  add column if not exists course_id bigint references public.courses (id) on delete set null;
+
 create table if not exists public.subtasks (
   id bigint primary key,
   task_id bigint not null references public.ai_tasks (id) on delete cascade,
   subtask_title text not null default '',
   description text not null default '',
+  notes text not null default '',
   status text not null default 'pending',
   is_done boolean not null default false,
   allocated_time timestamptz,
@@ -142,6 +153,8 @@ create table if not exists public.subtasks (
   allocated_time_str text,
   schedule_event_id text
 );
+
+alter table public.subtasks add column if not exists notes text not null default '';
 
 alter table public.ai_tasks enable row level security;
 alter table public.subtasks enable row level security;
@@ -216,7 +229,9 @@ create policy "notifications: all own"
 
 create index if not exists idx_courses_user on public.courses (user_id);
 create index if not exists idx_urgent_tasks_user on public.urgent_tasks (user_id);
+create index if not exists idx_urgent_tasks_course on public.urgent_tasks (course_id);
 create index if not exists idx_ai_tasks_user on public.ai_tasks (user_id);
+create index if not exists idx_ai_tasks_course on public.ai_tasks (course_id);
 create index if not exists idx_subtasks_task on public.subtasks (task_id);
 create index if not exists idx_schedule_events_user on public.schedule_events (user_id);
 create index if not exists idx_notifications_user on public.notifications (user_id);

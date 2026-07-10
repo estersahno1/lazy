@@ -13,6 +13,8 @@ erDiagram
     profiles ||--o{ schedule_events : "has"
     profiles ||--o{ notifications : "has"
     courses ||--o| grades : "has"
+    courses ||--o{ urgent_tasks : "optional"
+    courses ||--o{ ai_tasks : "optional"
     ai_tasks ||--o{ subtasks : "contains"
 
     profiles {
@@ -20,6 +22,7 @@ erDiagram
         text name
         text institution
         timestamptz created_at
+        boolean onboarding_completed
     }
 
     courses {
@@ -40,6 +43,7 @@ erDiagram
     urgent_tasks {
         bigint id PK
         uuid user_id FK
+        bigint course_id FK
         text title
         date deadline
         text deadline_time
@@ -51,6 +55,7 @@ erDiagram
     ai_tasks {
         bigint id PK
         uuid user_id FK
+        bigint course_id FK
         text title
         date deadline
         text deadline_time
@@ -68,6 +73,7 @@ erDiagram
         bigint task_id FK
         text subtask_title
         text description
+        text notes
         text status
         boolean is_done
         timestamptz allocated_time
@@ -104,17 +110,17 @@ erDiagram
 
 | ישות | תיאור |
 |------|--------|
-| **profiles** | פרופיל סטודנט — מקושר 1:1 ל-`auth.users` של Supabase Auth |
+| **profiles** | פרופיל סטודנט — מקושר 1:1 ל-`auth.users` של Supabase Auth; כולל סטטוס onboarding |
 | **courses** | קורסים לפי סמסטר ושנה |
 | **grades** | ציון ונקודות זכות לכל קורס (1:1) |
-| **urgent_tasks** | משימות דחופות בדף הבית |
-| **ai_tasks** | משימות גדולות שעוברות פירוק לשלבים |
-| **subtasks** | שלבי ביצוע של משימת AI, כולל שיבוץ ביומן |
+| **urgent_tasks** | משימות דחופות בדף הבית — קישור אופציונלי לקורס (`course_id`) + שם לתצוגה |
+| **ai_tasks** | משימות גדולות שעוברות פירוק לשלבים — קישור אופציונלי לקורס (`course_id`) |
+| **subtasks** | שלבי ביצוע של משימת AI, כולל הערות ושיבוץ ביומן |
 | **schedule_events** | שיעורים, מבחנים ואירועים במערכת השעות |
 | **notifications** | התראות שנוצרות ממשימות, מבחנים ושלבים |
 
 ## אבטחה (RLS)
 
-כל הטבלאות מוגנות ב-Row Level Security: משתמש רואה ומשנה **רק** שורות ש-`user_id` שלהן שווה ל-`auth.uid()`.
+כל הטבלאות מוגנות ב-Row Level Security: משתמש רואה ומשנה **רק** שורות ששייכות אליו (`auth.uid()`), כולל גישה ל-`grades` / `subtasks` דרך הקורס או המשימה שבבעלותו.
 
 פרטים מלאים ב-`supabase/schema.sql`.
