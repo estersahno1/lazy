@@ -1591,6 +1591,11 @@ export function AppProvider({ children }) {
     ? userCourses
     : userCourses.slice(0, 2);
   const pendingTasks = state.urgentTasks.filter((t) => !t.completed);
+  const todaysUrgentTasks = state.urgentTasks.filter((t) => {
+    if (t.completed) return false;
+    if (!t.deadline) return true;
+    return t.deadline <= todayLocalDate();
+  });
 
   const editingEvent = editingEventId
     ? (state.scheduleByDay[state.selectedDay] || []).find((e) => e.id === editingEventId)
@@ -1667,6 +1672,7 @@ export function AppProvider({ children }) {
     calcGpaForFilter: (filter) =>
       calcGpaForFilter(state.grades, state.courses, currentStudent?.id, filter),
     pendingTasks,
+    todaysUrgentTasks,
     setWeekOffset,
     goToScheduleDate,
     setSelectedDay,

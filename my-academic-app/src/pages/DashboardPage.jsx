@@ -50,7 +50,7 @@ function ProgressRing({ percent }) {
 function DashboardPage() {
   const {
     profile,
-    urgentTasks,
+    todaysUrgentTasks,
     pendingTasks,
     weeklyProgress,
     nextClass,
@@ -347,11 +347,11 @@ function DashboardPage() {
       <p className="section-header__count section-header__count--below">{pendingTasks.length} מטלות פתוחות</p>
 
       <div className="card card--tasks">
-        {urgentTasks.length === 0 ? (
+        {todaysUrgentTasks.length === 0 ? (
           <p className="form-hint form-hint--center">אין מטלות — לחצי &quot;+ מטלה חדשה&quot; להוספה</p>
         ) : (
           <ul className="task-list">
-            {urgentTasks.map((task) => (
+            {todaysUrgentTasks.map((task) => (
               <li key={task.id}>
                 <TaskItem
                   task={task}
