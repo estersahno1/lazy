@@ -107,6 +107,7 @@ export async function loadAppStateFromSupabase(userId) {
     title: t.title,
     deadline: t.deadline || '',
     deadlineTime: t.deadline_time || '23:59',
+    courseId: t.course_id != null ? Number(t.course_id) : null,
     courseName: t.course_name || '',
     priority: t.priority || 'medium',
     completed: Boolean(t.completed),
@@ -141,6 +142,7 @@ export async function loadAppStateFromSupabase(userId) {
       description: t.description || '',
       hoursPerWeek: Number(t.hours_per_week) || 5,
       weeks: t.weeks || 4,
+      courseId: t.course_id != null ? Number(t.course_id) : null,
       courseName: t.course_name || '',
       approved: Boolean(t.approved),
       fileName: t.file_name,
@@ -196,6 +198,7 @@ export async function saveAppStateToSupabase(userId, state) {
   const urgentRows = (state.urgentTasks || []).map((t) => ({
     id: Number(t.id),
     user_id: userId,
+    course_id: t.courseId != null ? Number(t.courseId) : null,
     title: t.title || '',
     deadline: t.deadline || null,
     deadline_time: t.deadlineTime || '23:59',
@@ -207,6 +210,7 @@ export async function saveAppStateToSupabase(userId, state) {
   const taskRows = (state.aiTasks || []).map((t) => ({
     id: Number(t.id),
     user_id: userId,
+    course_id: t.courseId != null ? Number(t.courseId) : null,
     title: t.title || '',
     deadline: t.deadline || null,
     deadline_time: t.deadlineTime || '23:59',

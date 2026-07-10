@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   buildMonthGrid,
   CALENDAR_WEEK_HEADERS,
+  getScheduleEventsForDate,
   todayLocalDate,
 } from '../utils/scheduleUtils';
 
-function MonthCalendar({ weekDays, selectedDay, onSelectDate, monthEventsByDate = {} }) {
+function MonthCalendar({ weekDays, selectedDay, onSelectDate, scheduleByDay = {} }) {
   const selectedDate = weekDays[selectedDay]?.date;
   const anchor = selectedDate ? new Date(`${selectedDate}T12:00:00`) : new Date();
   const [viewYear, setViewYear] = useState(anchor.getFullYear());
@@ -70,7 +71,7 @@ function MonthCalendar({ weekDays, selectedDay, onSelectDate, monthEventsByDate 
           const isSelected = cell.date === selectedDate;
           const isToday = cell.date === today;
           const inWeek = weekDateSet.has(cell.date);
-          const events = monthEventsByDate[cell.date] || [];
+          const events = getScheduleEventsForDate(scheduleByDay, cell.date);
           return (
             <button
               key={cell.date}

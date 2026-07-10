@@ -16,6 +16,8 @@ import {
   durationToHeight,
   findFreeTimeSlot,
   minutesToTop,
+  getScheduleEventsForDate,
+  findScheduleEventDay,
 } from '../utils/scheduleUtils';
 import {
   splitTaskMock,
@@ -43,6 +45,8 @@ import {
   deleteStudentAccount,
   isDemoCredentials,
   isLocalDemoStudent,
+  DEMO_USER_EMAIL,
+  DEMO_USER_PASSWORD,
 } from '../utils/authUtils';
 import { isSupabaseEnabled } from '../lib/supabase';
 import {
@@ -609,27 +613,31 @@ export function AppProvider({ children }) {
     let cancelled = false;
 
     (async () => {
-      const session = await getSupabaseSession();
-      if (cancelled) return;
-      if (session) {
-        const student = await fetchSupabaseStudent(session);
-        const cloudState = await loadAppStateFromSupabase(session.user.id);
+      try {
+        const session = await getSupabaseSession();
         if (cancelled) return;
-        setCurrentStudent(student);
-        setState(mergeCloudState(cloudState, student.id, student.email));
-        setAuthLoading(false);
-        return;
-      }
-
-      const sessionId = getSessionStudentId();
-      if (sessionId) {
-        const student = getStudentById(sessionId);
-        if (student && isLocalDemoStudent(student)) {
+        if (session) {
+          const student = await fetchSupabaseStudent(session);
+          const cloudState = await loadAppStateFromSupabase(session.user.id);
+          if (cancelled) return;
           setCurrentStudent(student);
-          setState(loadStateForStudent(student.id, student.email));
+          setState(mergeCloudState(cloudState, student.id, student.email));
+          return;
         }
+
+        const sessionId = getSessionStudentId();
+        if (sessionId) {
+          const student = getStudentById(sessionId);
+          if (student && isLocalDemoStudent(student)) {
+            setCurrentStudent(student);
+            setState(loadStateForStudent(student.id, student.email));
+          }
+        }
+      } catch (err) {
+        console.warn('Auth bootstrap failed:', err);
+      } finally {
+        if (!cancelled) setAuthLoading(false);
       }
-      setAuthLoading(false);
     })();
 
     return () => {
@@ -822,6 +830,18 @@ export function AppProvider({ children }) {
 
   const clearAuthError = () => setAuthError('');
 
+  const enterDemoSession = (student) => {
+    const demoState = resolveDemoSeedState(student.id, student.email);
+    const nextState = applyAiTasksReconciliation(
+      parseStoredAppData(demoState, student.id)
+    );
+    setAuthError('');
+    setCurrentStudent(student);
+    setState(nextState);
+    localStorage.setItem(studentStorageKey(student.id), JSON.stringify(nextState));
+    showToast(`שלום, ${student.name.split(' ')[0]}! זה חשבון דמו עם נתונים לדוגמה`);
+  };
+
   const login = async (email, password) => {
     if (isDemoCredentials(email, password)) {
       ensureDemoStudentAccount();
@@ -830,10 +850,8 @@ export function AppProvider({ children }) {
         setAuthError(result.error);
         return;
       }
-      setAuthError('');
-      setCurrentStudent(result.student);
-      setState(loadStateForStudent(result.student.id, result.student.email));
-      showToast(`שלום, ${result.student.name.split(' ')[0]}!`);
+      // Always reload the full built-in demo seed so every visitor sees the same showcase data
+      enterDemoSession(result.student);
       return;
     }
     if (isSupabaseEnabled) {
@@ -858,6 +876,10 @@ export function AppProvider({ children }) {
     setCurrentStudent(result.student);
     setState(loadStateForStudent(result.student.id, result.student.email));
     showToast(`שלום, ${result.student.name.split(' ')[0]}!`);
+  };
+
+  const loginAsDemo = async () => {
+    await login(DEMO_USER_EMAIL, DEMO_USER_PASSWORD);
   };
 
   const loginWithGoogle = async () => {
@@ -1142,32 +1164,46 @@ export function AppProvider({ children }) {
   };
 
   const updateScheduleEvent = (day, eventId, event) => {
-    setState((prev) => ({
-      ...prev,
-      scheduleByDay: {
-        ...prev.scheduleByDay,
-        [day]: (prev.scheduleByDay[day] || []).map((e) =>
-          e.id === eventId ? buildEventBlock({ ...event, id: eventId }) : e
-        ),
-      },
-    }));
+    setState((prev) => {
+      const actualDay = findScheduleEventDay(prev.scheduleByDay, eventId) ?? day;
+      return {
+        ...prev,
+        scheduleByDay: {
+          ...prev.scheduleByDay,
+          [actualDay]: (prev.scheduleByDay[actualDay] || []).map((e) =>
+            e.id === eventId ? buildEventBlock({ ...event, id: eventId }) : e
+          ),
+        },
+      };
+    });
     setEditingEventId(null);
     showToast('האירוע עודכן!');
   };
 
   const deleteScheduleEvent = (day, eventId) => {
-    setState((prev) => ({
-      ...prev,
-      scheduleByDay: {
-        ...prev.scheduleByDay,
-        [day]: (prev.scheduleByDay[day] || []).filter((e) => e.id !== eventId),
-      },
-    }));
+    setState((prev) => {
+      const actualDay = findScheduleEventDay(prev.scheduleByDay, eventId) ?? day;
+      return {
+        ...prev,
+        scheduleByDay: {
+          ...prev.scheduleByDay,
+          [actualDay]: (prev.scheduleByDay[actualDay] || []).filter((e) => e.id !== eventId),
+        },
+      };
+    });
     setEditingEventId(null);
     showToast('האירוע הוסר מהמערכת.');
   };
 
-  const openEditEvent = (eventId) => {
+  const openEditEvent = (eventId, dayIndex) => {
+    setState((prev) => {
+      const resolvedDay =
+        typeof dayIndex === 'number'
+          ? dayIndex
+          : findScheduleEventDay(prev.scheduleByDay, eventId);
+      if (resolvedDay == null || resolvedDay === prev.selectedDay) return prev;
+      return { ...prev, selectedDay: resolvedDay };
+    });
     setEditingEventId(eventId);
     setShowAddEvent(false);
   };
@@ -1615,9 +1651,7 @@ export function AppProvider({ children }) {
 
   const currentSchedule = useMemo(() => {
     const dayDate = days[state.selectedDay]?.date;
-    return (state.scheduleByDay[state.selectedDay] || []).filter(
-      (ev) => !ev.scheduledDate || ev.scheduledDate === dayDate
-    );
+    return getScheduleEventsForDate(state.scheduleByDay, dayDate);
   }, [state.scheduleByDay, state.selectedDay, days]);
   const userCourses = useMemo(
     () => enrichCoursesWithGrades(state.courses, state.grades, currentStudent?.id),
@@ -1638,7 +1672,11 @@ export function AppProvider({ children }) {
   });
 
   const editingEvent = editingEventId
-    ? (state.scheduleByDay[state.selectedDay] || []).find((e) => e.id === editingEventId)
+    ? (state.scheduleByDay[state.selectedDay] || []).find((e) => e.id === editingEventId) ||
+      Object.values(state.scheduleByDay)
+        .flat()
+        .find((e) => e?.id === editingEventId) ||
+      null
     : null;
 
   const activeMaterials = materialsSource || nextClass;
@@ -1690,6 +1728,7 @@ export function AppProvider({ children }) {
     updateStudent,
     updateProfile: updateStudent,
     login,
+    loginAsDemo,
     loginWithGoogle,
     register,
     logout,

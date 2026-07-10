@@ -164,6 +164,11 @@ export function isDemoCredentials(email, password) {
   );
 }
 
+/** One-click demo entry — same credentials shown on the auth screen. */
+export function getDemoCredentials() {
+  return { email: DEMO_USER_EMAIL, password: DEMO_USER_PASSWORD };
+}
+
 export function isLocalDemoStudent(student) {
   return Boolean(student && isDemoUserEmail(student.email) && typeof student.id === 'number');
 }

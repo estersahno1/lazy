@@ -311,6 +311,34 @@ export function dateToAcademicDayIndex(dateStr) {
   return d.getDay();
 }
 
+/** אירועי יום: חוזרים (בלי תאריך) + חד-פעמיים שתאריכם תואם */
+export function getScheduleEventsForDate(scheduleByDay, dateStr) {
+  if (!dateStr) return [];
+  const dayIndex = dateToAcademicDayIndex(dateStr);
+  const events = (scheduleByDay?.[dayIndex] || []).filter(
+    (ev) => !ev.scheduledDate || ev.scheduledDate === dateStr
+  );
+  const seen = new Set(events.map((e) => e.id));
+  for (let d = 0; d <= 6; d += 1) {
+    if (d === dayIndex) continue;
+    for (const ev of scheduleByDay?.[d] || []) {
+      if (ev.scheduledDate === dateStr && !seen.has(ev.id)) {
+        events.push(ev);
+        seen.add(ev.id);
+      }
+    }
+  }
+  return events.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+}
+
+export function findScheduleEventDay(scheduleByDay, eventId) {
+  if (eventId == null) return null;
+  for (let d = 0; d <= 6; d += 1) {
+    if ((scheduleByDay?.[d] || []).some((e) => e.id === eventId)) return d;
+  }
+  return null;
+}
+
 export function addAcademicDays(dateStr, days) {
   const d = new Date(`${dateStr}T12:00:00`);
   d.setDate(d.getDate() + days);

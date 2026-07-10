@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import MonthCalendar from '../components/MonthCalendar';
 import { ScheduleEventForm } from '../components/ProfileEditModal';
 import { formatDuration } from '../utils/taskSplitter';
+import { getScheduleEventsForDate } from '../utils/scheduleUtils';
 import { useSectionReveal } from '../utils/useSectionReveal';
 
 const times = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'];
@@ -79,37 +80,20 @@ function SchedulePage() {
     });
     return `${startLabel} – ${endLabel}`;
   }, [weekDays]);
-  const monthEventsByDate = useMemo(() => {
-    const map = {};
-    for (let d = 0; d <= 6; d++) {
-      (scheduleByDay?.[d] || []).forEach((ev) => {
-        if (!ev.scheduledDate) return;
-        if (!map[ev.scheduledDate]) map[ev.scheduledDate] = [];
-        map[ev.scheduledDate].push(ev);
-      });
-    }
-    Object.keys(map).forEach((date) => {
-      map[date].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-    });
-    return map;
-  }, [scheduleByDay]);
 
   const weekEventsByDay = useMemo(
     () =>
-      weekDays.map((day) => {
-        const dayEvents = (scheduleByDay?.[day.dayIndex] || []).filter(
-          (ev) => !ev.scheduledDate || ev.scheduledDate === day.date
-        );
-        const sorted = [...dayEvents].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-        return { ...day, events: sorted };
-      }),
+      weekDays.map((day) => ({
+        ...day,
+        events: getScheduleEventsForDate(scheduleByDay, day.date),
+      })),
     [weekDays, scheduleByDay]
   );
 
   const monthEvents = useMemo(() => {
     if (!selectedDate) return [];
-    return monthEventsByDate[selectedDate] || [];
-  }, [monthEventsByDate, selectedDate]);
+    return getScheduleEventsForDate(scheduleByDay, selectedDate);
+  }, [scheduleByDay, selectedDate]);
 
   return (
     <div className={`page page--schedule page--schedule--${viewMode}`}>
@@ -126,7 +110,7 @@ function SchedulePage() {
               weekDays={weekDays}
               selectedDay={selectedDay}
               onSelectDate={goToScheduleDate}
-              monthEventsByDate={monthEventsByDate}
+              scheduleByDay={scheduleByDay}
             />
           </aside>
         )}
@@ -217,7 +201,7 @@ function SchedulePage() {
                       type="button"
                       className={`schedule-block schedule-block--${block.color}${block.type === 'exam' ? ' schedule-block--dark' : ''}${block.atRisk ? ' schedule-block--at-risk' : ''}`}
                       style={{ top: block.top, height: block.height }}
-                      onClick={() => openEditEvent(block.id)}
+                      onClick={() => openEditEvent(block.id, selectedDay)}
                       title="לחיצה לעריכה"
                     >
                       <div>{block.title}</div>
@@ -275,7 +259,7 @@ function SchedulePage() {
                           key={event.id}
                           type="button"
                           className={`week-view-event week-view-event--${event.color || 'purple'}`}
-                          onClick={() => openEditEvent(event.id)}
+                          onClick={() => openEditEvent(event.id, day.dayIndex)}
                         >
                           <span className="week-view-event__title">{event.title}</span>
                           <span className="week-view-event__meta">
@@ -290,7 +274,7 @@ function SchedulePage() {
               </div>
             </div>
           )}
- 
+
           {viewMode === 'month' && (
             <div className="month-view-panel card">
               <div className="month-view-calendar">
@@ -298,7 +282,7 @@ function SchedulePage() {
                   weekDays={weekDays}
                   selectedDay={selectedDay}
                   onSelectDate={goToScheduleDate}
-                  monthEventsByDate={monthEventsByDate}
+                  scheduleByDay={scheduleByDay}
                 />
               </div>
               <p className="month-view-panel__title">
@@ -313,7 +297,10 @@ function SchedulePage() {
                 <ul className="month-view-list">
                   {monthEvents.map((event) => (
                     <li key={event.id} className="month-view-list__item">
-                      <button type="button" onClick={() => openEditEvent(event.id)}>
+                      <button
+                        type="button"
+                        onClick={() => openEditEvent(event.id, selectedDay)}
+                      >
                         <strong>{event.title}</strong>
                         <span>
                           {event.time}

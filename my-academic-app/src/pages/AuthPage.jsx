@@ -7,11 +7,14 @@ const emptyLogin = { email: '', password: '' };
 const emptyRegister = { name: '', email: '', institution: '', password: '', confirm: '' };
 
 function AuthPage() {
-  const { login, loginWithGoogle, register, authError, clearAuthError } = useApp();
+  const { login, loginAsDemo, loginWithGoogle, register, authError, clearAuthError } = useApp();
   const [mode, setMode] = useState('login');
   const [loginForm, setLoginForm] = useState(emptyLogin);
   const [registerForm, setRegisterForm] = useState(emptyRegister);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
 
   const switchMode = (next) => {
     setMode(next);
@@ -20,24 +23,36 @@ function AuthPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    await login(loginForm.email, loginForm.password);
+    if (loginLoading) return;
+    setLoginLoading(true);
+    try {
+      await login(loginForm.email, loginForm.password);
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    if (registerLoading) return;
     if (registerForm.password !== registerForm.confirm) {
       return;
     }
-    const registeredEmail = await register({
-      name: registerForm.name,
-      email: registerForm.email,
-      institution: registerForm.institution,
-      password: registerForm.password,
-    });
-    if (registeredEmail) {
-      setMode('login');
-      setLoginForm({ email: registeredEmail, password: '' });
-      setRegisterForm(emptyRegister);
+    setRegisterLoading(true);
+    try {
+      const registeredEmail = await register({
+        name: registerForm.name,
+        email: registerForm.email,
+        institution: registerForm.institution,
+        password: registerForm.password,
+      });
+      if (registeredEmail) {
+        setMode('login');
+        setLoginForm({ email: registeredEmail, password: '' });
+        setRegisterForm(emptyRegister);
+      }
+    } finally {
+      setRegisterLoading(false);
     }
   };
 
@@ -48,6 +63,16 @@ function AuthPage() {
       await loginWithGoogle();
     } finally {
       setOauthLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    if (demoLoading) return;
+    setDemoLoading(true);
+    try {
+      await loginAsDemo();
+    } finally {
+      setDemoLoading(false);
     }
   };
 
@@ -106,6 +131,7 @@ function AuthPage() {
               onChange={(e) => setLoginForm((p) => ({ ...p, email: e.target.value }))}
               required
               autoComplete="email"
+              disabled={loginLoading}
             />
             <label className="form-label" htmlFor="login-password">סיסמה</label>
             <input
@@ -117,13 +143,25 @@ function AuthPage() {
               onChange={(e) => setLoginForm((p) => ({ ...p, password: e.target.value }))}
               required
               autoComplete="current-password"
+              disabled={loginLoading}
             />
-            <button type="submit" className="btn-gradient auth-form__submit">
-              התחברי
+            <button type="submit" className="btn-gradient auth-form__submit" disabled={loginLoading}>
+              {loginLoading ? 'מתחברת...' : 'התחברי'}
             </button>
-            <p className="auth-card__hint">
-              חשבון דמו: dana@university.ac.il / 1234
-            </p>
+
+            <div className="auth-demo">
+              <button
+                type="button"
+                className="auth-demo__btn"
+                onClick={handleDemoLogin}
+                disabled={demoLoading || loginLoading}
+              >
+                {demoLoading ? 'טוען דמו...' : 'כניסת דמו — נתונים לדוגמה'}
+              </button>
+              <p className="auth-card__hint">
+                כולם רואים את אותם קורסים, משימות ומערכת שעות מוכנים מראש
+              </p>
+            </div>
           </form>
         ) : (
           <form className="auth-form" onSubmit={handleRegister}>
@@ -135,6 +173,7 @@ function AuthPage() {
               value={registerForm.name}
               onChange={(e) => setRegisterForm((p) => ({ ...p, name: e.target.value }))}
               required
+              disabled={registerLoading}
             />
             <label className="form-label" htmlFor="reg-email">אימייל</label>
             <input
@@ -146,6 +185,7 @@ function AuthPage() {
               onChange={(e) => setRegisterForm((p) => ({ ...p, email: e.target.value }))}
               required
               autoComplete="email"
+              disabled={registerLoading}
             />
             <label className="form-label" htmlFor="reg-institution">מוסד לימודים</label>
             <input
@@ -155,6 +195,7 @@ function AuthPage() {
               value={registerForm.institution}
               onChange={(e) => setRegisterForm((p) => ({ ...p, institution: e.target.value }))}
               required
+              disabled={registerLoading}
             />
             <label className="form-label" htmlFor="reg-password">סיסמה</label>
             <input
@@ -167,6 +208,7 @@ function AuthPage() {
               required
               minLength={4}
               autoComplete="new-password"
+              disabled={registerLoading}
             />
             <label className="form-label" htmlFor="reg-confirm">אימות סיסמה</label>
             <input
@@ -179,6 +221,7 @@ function AuthPage() {
               required
               minLength={4}
               autoComplete="new-password"
+              disabled={registerLoading}
             />
             {registerForm.confirm &&
               registerForm.password !== registerForm.confirm && (
@@ -188,11 +231,12 @@ function AuthPage() {
               type="submit"
               className="btn-gradient auth-form__submit"
               disabled={
+                registerLoading ||
                 registerForm.password !== registerForm.confirm ||
                 registerForm.password.length < 4
               }
             >
-              הירשמי
+              {registerLoading ? 'נרשמת...' : 'הירשמי'}
             </button>
           </form>
         )}
@@ -205,7 +249,7 @@ function AuthPage() {
             type="button"
             className="auth-google-btn"
             onClick={handleGoogleLogin}
-            disabled={oauthLoading || !isSupabaseEnabled}
+            disabled={oauthLoading || loginLoading || !isSupabaseEnabled}
           >
             <GoogleIcon />
             {oauthLoading ? 'מעביר ל-Google...' : 'המשך עם Google'}

@@ -7,6 +7,8 @@ import {
   addAcademicDays,
   dateToAcademicDayIndex,
   getWeekDays,
+  getScheduleEventsForDate,
+  findScheduleEventDay,
 } from '../scheduleUtils'
 
 describe('formatLocalDate', () => {
@@ -81,5 +83,42 @@ describe('getWeekDays (7-day week)', () => {
     const { days } = getWeekDays(0)
     expect(days).toHaveLength(7)
     expect(days.map((d) => d.dayIndex)).toEqual([0, 1, 2, 3, 4, 5, 6])
+  })
+})
+
+describe('getScheduleEventsForDate', () => {
+  const monday = '2026-06-15' // Monday
+  const scheduleByDay = {
+    1: [
+      { id: 'lecture', title: 'שיעור', time: '10:00', scheduledDate: null },
+      { id: 'exam', title: 'מבחן', time: '14:00', scheduledDate: monday },
+      { id: 'other-day', title: 'אחר', time: '09:00', scheduledDate: '2026-06-16' },
+    ],
+    2: [{ id: 'misplaced', title: 'בטעות', time: '11:00', scheduledDate: monday }],
+  }
+
+  it('includes recurring lectures and same-date events', () => {
+    const events = getScheduleEventsForDate(scheduleByDay, monday)
+    expect(events.map((e) => e.id)).toEqual(['lecture', 'misplaced', 'exam'])
+  })
+
+  it('excludes events dated for another day', () => {
+    const events = getScheduleEventsForDate(scheduleByDay, monday)
+    expect(events.find((e) => e.id === 'other-day')).toBeUndefined()
+  })
+
+  it('returns empty for missing date', () => {
+    expect(getScheduleEventsForDate(scheduleByDay, '')).toEqual([])
+  })
+})
+
+describe('findScheduleEventDay', () => {
+  it('finds the day bucket for an event id', () => {
+    const scheduleByDay = {
+      0: [],
+      3: [{ id: 'ev-1', title: 'שיעור' }],
+    }
+    expect(findScheduleEventDay(scheduleByDay, 'ev-1')).toBe(3)
+    expect(findScheduleEventDay(scheduleByDay, 'missing')).toBeNull()
   })
 })

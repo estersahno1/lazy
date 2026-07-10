@@ -4505,6 +4505,36 @@ body {
   margin: var(--space-2) 0 0;
 }
 
+.auth-demo {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.auth-demo__btn {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.auth-demo__btn:hover:not(:disabled) {
+  background: var(--color-surface);
+  border-color: var(--color-text-muted);
+}
+
+.auth-demo__btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .auth-divider {
   display: flex;
   align-items: center;
