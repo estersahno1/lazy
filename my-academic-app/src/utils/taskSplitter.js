@@ -44,9 +44,9 @@ const STEP_TEMPLATES = [
 
 export const STEP_STATUS_LABELS = {
   done: 'הושלם',
-  active: 'בוצע',
-  pending: 'טרם החל',
-  at_risk: 'בסיכון',
+  active: 'להיום',
+  pending: 'טרם בוצע',
+  at_risk: 'עבר הזמן!',
 };
 
 export function extractSubtaskTitle(subtask) {
@@ -101,11 +101,12 @@ export function normalizeSubtask(subtask, taskId, defaults = {}) {
     allocated_time,
     is_done: Boolean(is_done),
     status,
-    label: subtask.label ?? STEP_STATUS_LABELS[status] ?? STEP_STATUS_LABELS.pending,
+    label: STEP_STATUS_LABELS[status] ?? subtask.label ?? STEP_STATUS_LABELS.pending,
     durationMinutes: subtask.durationMinutes ?? defaults.durationMinutes ?? 60,
     allocatedTime: subtask.allocatedTime ?? subtask.time ?? null,
     scheduleEventId: subtask.scheduleEventId ?? null,
     description: subtask.description ?? '',
+    notes: subtask.notes ?? '',
     rescheduleCount: subtask.rescheduleCount ?? 0,
   };
 }

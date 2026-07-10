@@ -29,12 +29,12 @@ function SchedulePage() {
     syncToCurrentWeek,
     scheduleByDay,
   } = useApp();
-  const [viewMode, setViewMode] = useState('week');
+  const [viewMode, setViewMode] = useState('day');
   const registerReveal = useSectionReveal();
 
   useEffect(() => {
     syncToCurrentWeek();
-  }, []);
+  }, [syncToCurrentWeek]);
 
   const handleAdd = (form) => {
     addScheduleEvent(form);
@@ -156,42 +156,46 @@ function SchedulePage() {
             </button>
           </div>
 
-          <div className="day-selector">
-            <button
-              type="button"
-              className="day-selector__arrow"
-              aria-label="שבוע קודם"
-              onClick={() => setWeekOffset(-1)}
-            >
-              &lt;
-            </button>
-            <div className="day-selector__days">
-              {weekDays.map((day) => (
+          {viewMode === 'day' && (
+            <>
+              <div className="day-selector">
                 <button
-                  key={day.date}
                   type="button"
-                  className={`day-pill${selectedDay === day.dayIndex ? ' day-pill--active' : ''}`}
-                  onClick={() => setSelectedDay(day.dayIndex)}
+                  className="day-selector__arrow"
+                  aria-label="שבוע קודם"
+                  onClick={() => setWeekOffset(-1)}
                 >
-                  <span className="day-pill__letter">{day.letter}</span>
-                  <span className="day-pill__num">{day.num}</span>
+                  &lt;
                 </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="day-selector__arrow"
-              aria-label="שבוע הבא"
-              onClick={() => setWeekOffset(1)}
-            >
-              &gt;
-            </button>
-          </div>
+                <div className="day-selector__days">
+                  {weekDays.map((day) => (
+                    <button
+                      key={day.date}
+                      type="button"
+                      className={`day-pill${selectedDay === day.dayIndex ? ' day-pill--active' : ''}`}
+                      onClick={() => setSelectedDay(day.dayIndex)}
+                    >
+                      <span className="day-pill__letter">{day.letter}</span>
+                      <span className="day-pill__num">{day.num}</span>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="day-selector__arrow"
+                  aria-label="שבוע הבא"
+                  onClick={() => setWeekOffset(1)}
+                >
+                  &gt;
+                </button>
+              </div>
 
-          {selectedDayInfo && (
-            <p className="schedule-day-label">
-              לוח זמנים — יום {selectedDayInfo.letter} ({selectedDayInfo.num})
-            </p>
+              {selectedDayInfo && (
+                <p className="schedule-day-label">
+                  לוח זמנים — יום {selectedDayInfo.letter} ({selectedDayInfo.num})
+                </p>
+              )}
+            </>
           )}
 
           {viewMode === 'day' && (
@@ -298,7 +302,10 @@ function SchedulePage() {
                 />
               </div>
               <p className="month-view-panel__title">
-                אירועים לתאריך נבחר: {selectedDayInfo?.num}
+                אירועים לתאריך נבחר:{' '}
+                {selectedDate
+                  ? selectedDate.split('-').reverse().join('/')
+                  : '—'}
               </p>
               {monthEvents.length === 0 ? (
                 <p className="schedule-empty">אין אירועים לתאריך זה</p>

@@ -120,7 +120,6 @@ function GradesPage() {
     addCourse,
     updateCourse,
     deleteCourse,
-    deleteGradeForCourse,
     editingCourseId,
     setEditingCourse,
     degreeGpa,
@@ -186,11 +185,6 @@ function GradesPage() {
       `למחוק את "${course.course_name}"?\nהקורס, הציון והמטלות המשויכות אליו יוסרו מהמערכת.`
     );
     if (ok) deleteCourse(course.id);
-  };
-
-  const handleDeleteGrade = (course) => {
-    const ok = window.confirm(`למחוק את הציון של "${course.course_name}"? הקורס יישאר ברשימה.`);
-    if (ok) deleteGradeForCourse(course.id);
   };
 
   const filteredCourses = useMemo(() => {
@@ -370,29 +364,18 @@ function GradesPage() {
                       <button
                         type="button"
                         className="course-card__icon-btn"
-                        aria-label="מחק קורס"
-                        onClick={() => handleDeleteCourse(course)}
-                      >
-                        <TrashIcon />
-                      </button>
-                      {(course.score != null || course.grade != null) && (
-                        <button
-                          type="button"
-                          className="course-card__grade-delete"
-                          aria-label="מחק ציון"
-                          onClick={() => handleDeleteGrade(course)}
-                          title="מחק ציון בלבד"
-                        >
-                          ציון
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="course-card__icon-btn"
                         aria-label="ערוך"
                         onClick={() => setEditingCourse(course.id)}
                       >
                         <EditIcon />
+                      </button>
+                      <button
+                        type="button"
+                        className="course-card__icon-btn"
+                        aria-label="מחק קורס"
+                        onClick={() => handleDeleteCourse(course)}
+                      >
+                        <TrashIcon />
                       </button>
                     </div>
                   </div>

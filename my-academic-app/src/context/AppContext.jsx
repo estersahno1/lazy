@@ -403,6 +403,25 @@ function studentStorageKey(studentId) {
   return `${APP_DATA_PREFIX}-${studentId}`;
 }
 
+// גיבוי מקומי בלתי-תלוי ברשת: פעם שה-onboarding הוצג והושלם בדפדפן הזה,
+// לא נציג אותו שוב גם אם שמירת הדגל ב-Supabase נכשלת (בעיית הרשאות/רשת).
+// שמור מספר גרסה ולא boolean — כדי להציג שוב את הסיור בעתיד (למשל כשמוסיפים
+// פיצ'ר חדש) מספיק להעלות את ONBOARDING_VERSION; משתמשים שראו גרסה ישנה
+// יותר יראו את הסיור שוב באופן אוטומטי.
+const ONBOARDING_VERSION = 1;
+
+function onboardingSeenKey(studentId) {
+  return `${APP_DATA_PREFIX}-onboarding-seen-${studentId}`;
+}
+
+function getSeenOnboardingVersion(studentId) {
+  return Number(localStorage.getItem(onboardingSeenKey(studentId))) || 0;
+}
+
+function markOnboardingSeenLocally(studentId) {
+  localStorage.setItem(onboardingSeenKey(studentId), String(ONBOARDING_VERSION));
+}
+
 function parseStoredAppData(parsed, userId) {
   const {
     notifications: legacyNotifications,
@@ -644,7 +663,11 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     if (authLoading) return;
-    if (currentStudent && !currentStudent.hasCompletedOnboarding) {
+    if (
+      currentStudent &&
+      !currentStudent.hasCompletedOnboarding &&
+      getSeenOnboardingVersion(currentStudent.id) < ONBOARDING_VERSION
+    ) {
       setShowOnboarding(true);
     }
   }, [currentStudent, authLoading]);
@@ -789,6 +812,7 @@ export function AppProvider({ children }) {
     if (!currentStudent) return;
     setShowOnboarding(false);
     setCurrentStudent((prev) => (prev ? { ...prev, hasCompletedOnboarding: true } : prev));
+    markOnboardingSeenLocally(currentStudent.id);
     if (isSupabaseEnabled && !isLocalDemoStudent(currentStudent)) {
       supabaseCompleteOnboarding(currentStudent.id);
     } else {
@@ -1469,6 +1493,22 @@ export function AppProvider({ children }) {
     return true;
   };
 
+  const updateSubtaskNotes = (taskId, stepId, notes) => {
+    setState((prev) => {
+      const aiTasks = prev.aiTasks.map((task) => {
+        if (Number(task.id) !== Number(taskId)) return task;
+        const subtasks = getTaskSubtasks(task).map((s) => {
+          if (s.id !== stepId) return s;
+          return normalizeSubtask({ ...s, notes: notes ?? '' }, task.id);
+        });
+        return syncTaskSubtasks(task, subtasks);
+      });
+      return { ...prev, aiTasks };
+    });
+    showToast('ההערה נשמרה');
+    return true;
+  };
+
   const approveAiTaskSchedule = (taskId) => {
     const task = state.aiTasks.find((t) => t.id === taskId);
     if (!task || task.approved) return false;
@@ -1684,6 +1724,7 @@ export function AppProvider({ children }) {
     deleteAiTask,
     deleteSubtask,
     updateSubtaskSchedule,
+    updateSubtaskNotes,
     markStepDone,
     markStepNotDone,
     approveAiTaskSchedule,

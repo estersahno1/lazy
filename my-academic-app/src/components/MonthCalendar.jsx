@@ -82,17 +82,27 @@ function MonthCalendar({ weekDays, selectedDay, onSelectDate, monthEventsByDate 
             >
               <span className="month-calendar__day-num">{cell.day}</span>
               {events.length > 0 && (
-                <span className="month-calendar__tooltip" role="tooltip">
-                  {events.map((event) => (
-                    <span key={event.id} className="month-calendar__tooltip-line">
-                      <strong>{event.title}</strong>
-                      <em>
-                        {event.time}
-                        {event.room ? ` · ${event.room}` : ''}
-                      </em>
-                    </span>
-                  ))}
-                </span>
+                <>
+                  <span className="month-calendar__dots" aria-hidden="true">
+                    {events.slice(0, 3).map((event) => (
+                      <i
+                        key={event.id}
+                        className={`month-calendar__dot month-calendar__dot--${event.color || 'purple'}`}
+                      />
+                    ))}
+                  </span>
+                  <span className="month-calendar__tooltip" role="tooltip">
+                    {events.map((event) => (
+                      <span key={event.id} className="month-calendar__tooltip-line">
+                        <strong>{event.title}</strong>
+                        <em>
+                          {event.time}
+                          {event.room ? ` · ${event.room}` : ''}
+                        </em>
+                      </span>
+                    ))}
+                  </span>
+                </>
               )}
             </button>
           );

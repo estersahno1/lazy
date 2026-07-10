@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { BrainIcon, CalendarIcon, CalendarPlusIcon, TrashIcon } from '../components/Icons';
+import { BrainIcon, CalendarIcon, CalendarPlusIcon, TrashIcon, ClockIcon, CheckIcon, NoteIcon, EditIcon } from '../components/Icons';
 import Modal from '../components/Modal';
 import WeekPlannerGrid from '../components/WeekPlannerGrid';
 import CourseNameInput from '../components/CourseNameInput';
@@ -29,7 +29,7 @@ const badgeClass = {
 const AI_TIPS = [
   'חלוקת המשימה לצעדים קטנים מעלה את סיכויי ההצלחה ב-40%.',
   'שבצי את השלבים ביומן — קל יותר לעמוד ביעדים כשיש זמן מוגדר.',
-  'אם שלב לא הושלם, המערכת תדחה אותו ותסמן אותו בסיכון — כך לא תפספסי כלום.',
+  'הוסיפי הערות לתתי-משימות — תזכורות קצרות שעוזרות לחזור לעבודה בקלות.',
   'העלי קובץ Word, PDF או TXT — המערכת תפרק לפי המשימות שבמסמך.',
   'התחילי מהשלב הפעיל — סמני "הושלם" רק כשבאמת סיימת.',
   'שעה וחצי לסקירת ספרות? המערכת תשבץ בלו"ז בדיוק לפי משך הזמן שהוגדר.',
@@ -44,18 +44,20 @@ const emptyTaskForm = {
   description: '',
 };
 
-function TaskSlide({
+function TaskAccordion({
   task,
   onApprove,
   onStepDone,
-  onStepNotDone,
   onDelete,
   onDeleteSubtask,
   onUpdateSubtaskSchedule,
+  onUpdateSubtaskNotes,
 }) {
+  const [isOpen, setIsOpen] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
-  const [editingScheduleId, setEditingScheduleId] = useState(null);
+  const [panelMode, setPanelMode] = useState(null); // 'notes' | 'schedule' | null
   const [scheduleDraft, setScheduleDraft] = useState({ date: '', time: '09:00' });
+  const [notesDraft, setNotesDraft] = useState('');
   const subtasks = getTaskSubtasks(task);
   const selectedWeekCount = task.selectedWeekIndices?.length || defaultWorkWeekIndices(task.weeks).length;
   const workRangeLabel = useMemo(() => {
@@ -69,18 +71,35 @@ function TaskSlide({
 
   const deadlineLabel = formatDeadlineLabel(task.deadline, task.deadlineTime);
 
+  const toggleOpen = () => setIsOpen((prev) => !prev);
+
   const handleStepClick = (step) => {
-    setExpandedId(expandedId === step.id ? null : step.id);
+    if (expandedId === step.id) {
+      setExpandedId(null);
+      setPanelMode(null);
+      return;
+    }
+    setExpandedId(step.id);
+    setPanelMode(null);
   };
 
   const openScheduleEdit = (subtask, e) => {
     e?.stopPropagation();
-    setEditingScheduleId(subtask.id);
+    const closing = expandedId === subtask.id && panelMode === 'schedule';
+    setExpandedId(subtask.id);
+    setPanelMode(closing ? null : 'schedule');
     setScheduleDraft({
       date: (subtask.allocated_time || '').split('T')[0],
       time: subtask.allocatedTime || '09:00',
     });
+  };
+
+  const openNotesEdit = (subtask, e) => {
+    e?.stopPropagation();
+    const closing = expandedId === subtask.id && panelMode === 'notes';
     setExpandedId(subtask.id);
+    setPanelMode(closing ? null : 'notes');
+    setNotesDraft(subtask.notes || '');
   };
 
   const saveScheduleEdit = (subtaskId) => {
@@ -89,7 +108,12 @@ function TaskSlide({
       date: scheduleDraft.date,
       time: scheduleDraft.time,
     });
-    setEditingScheduleId(null);
+    setPanelMode(null);
+  };
+
+  const saveNotesEdit = (subtaskId) => {
+    onUpdateSubtaskNotes(task.id, subtaskId, notesDraft.trim());
+    setPanelMode(null);
   };
 
   const deadlineDateMax = task.deadline || undefined;
@@ -102,24 +126,36 @@ function TaskSlide({
   };
 
   return (
-    <div className="ai-carousel__slide">
+    <div className={`task-accordion${isOpen ? ' task-accordion--open' : ''}`}>
       <div className="task-overview">
-        <div className="task-overview__icon">
-          <BrainIcon />
-        </div>
-        <div className="task-overview__content">
-          <p className="task-overview__title">{task.title}</p>
-          <p className="task-overview__date">
-            <CalendarIcon />
-            תאריך הגשה: {deadlineLabel}
-          </p>
-          <p className="task-overview__meta">
-            {selectedWeekCount} שבועות לעבודה · {task.hoursPerWeek} שעות/שבוע
-            {workRangeLabel && ` · ${workRangeLabel}`}
-            {task.courseName && ` · ${task.courseName}`}
-            {task.fileName && ` · ${task.fileName}`}
-          </p>
-        </div>
+        <button
+          type="button"
+          className="task-overview__toggle"
+          aria-expanded={isOpen}
+          onClick={toggleOpen}
+        >
+          <div className="task-overview__icon">
+            <BrainIcon />
+          </div>
+          <div className="task-overview__content">
+            <span className="task-overview__title">{task.title}</span>
+            <span className="task-overview__date">
+              <CalendarIcon />
+              תאריך הגשה: {deadlineLabel}
+            </span>
+            <span className="task-overview__meta">
+              {subtasks.length} שלבים · {selectedWeekCount} שבועות לעבודה · {task.hoursPerWeek} שעות/שבוע
+              {workRangeLabel && ` · ${workRangeLabel}`}
+              {task.courseName && ` · ${task.courseName}`}
+              {task.fileName && ` · ${task.fileName}`}
+            </span>
+          </div>
+          <span className="task-overview__chevron" aria-hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </span>
+        </button>
         <button
           type="button"
           className="task-overview__delete"
@@ -130,159 +166,204 @@ function TaskSlide({
         </button>
       </div>
 
-      <ol className="timeline">
-        {subtasks.map((subtask) => (
-          <li
-            key={subtask.id}
-            className={`timeline__item timeline__item--${subtask.status}`}
+      {isOpen && (
+        <div className="task-accordion__body">
+          <ol className="timeline">
+            {subtasks.map((subtask) => {
+              const isExpanded = expandedId === subtask.id;
+              const showDetails =
+                isExpanded || subtask.status === 'active' || subtask.status === 'at_risk';
+              const notesOpen = isExpanded && panelMode === 'notes';
+              const scheduleOpen = isExpanded && panelMode === 'schedule' && !subtask.is_done;
+              const hasNotes = Boolean(subtask.notes?.trim());
+
+              return (
+                <li
+                  key={subtask.id}
+                  className={`timeline__item timeline__item--${subtask.status}`}
+                >
+                  <span className="timeline__dot" />
+                  <div
+                    className={`timeline__card${subtask.status === 'active' ? ' timeline__card--active' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className="timeline__card-main timeline__card--btn"
+                      onClick={() => handleStepClick(subtask)}
+                    >
+                      <div className="timeline__row">
+                        <span className="timeline__text">{subtask.subtask_title}</span>
+                        <span className={`timeline__badge ${badgeClass[subtask.status] || badgeClass.pending}`}>
+                          {subtask.is_done ? 'הושלם' : subtask.label}
+                        </span>
+                      </div>
+                      <p className="timeline__duration">
+                        <span className="timeline__meta-item">
+                          <CalendarIcon />
+                          {formatAllocatedTime(subtask)}
+                        </span>
+                        <span className="timeline__meta-item">
+                          <ClockIcon />
+                          {formatDuration(subtask.durationMinutes)}
+                        </span>
+                      </p>
+                      {showDetails && subtask.description && (
+                        <p className="timeline__description">{subtask.description}</p>
+                      )}
+                      {hasNotes && !notesOpen && (
+                        <p className="timeline__notes-preview">
+                          <NoteIcon size={14} />
+                          <span>{subtask.notes}</span>
+                        </p>
+                      )}
+                    </button>
+
+                    {(!subtask.is_done || isExpanded || hasNotes) && (
+                      <div className={`timeline__toolbar${subtask.is_done ? ' timeline__toolbar--done' : ''}`}>
+                        {!subtask.is_done && (
+                          <button
+                            type="button"
+                            className="timeline__tool timeline__tool--done"
+                            onClick={() => onStepDone(task.id, subtask.id)}
+                          >
+                            <CheckIcon size={15} />
+                            הושלם
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className={`timeline__tool${notesOpen ? ' timeline__tool--active' : ''}${hasNotes ? ' timeline__tool--has-note' : ''}`}
+                          onClick={(e) => openNotesEdit(subtask, e)}
+                          aria-pressed={notesOpen}
+                        >
+                          <NoteIcon size={15} />
+                          הערות
+                        </button>
+                        {!subtask.is_done && (
+                          <button
+                            type="button"
+                            className={`timeline__tool${scheduleOpen ? ' timeline__tool--active' : ''}`}
+                            onClick={(e) => openScheduleEdit(subtask, e)}
+                            aria-pressed={scheduleOpen}
+                          >
+                            <EditIcon size={15} />
+                            עדכן תאריך
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {notesOpen && (
+                      <div className="timeline__panel">
+                        <label className="form-label" htmlFor={`subtask-notes-${subtask.id}`}>
+                          הערות לתת-המשימה
+                        </label>
+                        <textarea
+                          id={`subtask-notes-${subtask.id}`}
+                          className="form-input timeline__notes-input"
+                          rows={3}
+                          placeholder="למשל: מצאתי מאמר טוב ב־JSTOR, להמשיך מפרק 2…"
+                          value={notesDraft}
+                          onChange={(e) => setNotesDraft(e.target.value)}
+                        />
+                        <div className="timeline__panel-actions">
+                          <button
+                            type="button"
+                            className="btn btn-dark btn--compact timeline__panel-btn"
+                            onClick={() => saveNotesEdit(subtask.id)}
+                          >
+                            שמור הערה
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline btn--compact timeline__panel-btn"
+                            onClick={() => setPanelMode(null)}
+                          >
+                            ביטול
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {scheduleOpen && (
+                      <div className="timeline__panel">
+                        <label className="form-label" htmlFor={`subtask-date-${subtask.id}`}>
+                          תאריך ושעה לביצוע
+                        </label>
+                        <div className="form-row">
+                          <input
+                            className="form-input"
+                            type="date"
+                            id={`subtask-date-${subtask.id}`}
+                            value={scheduleDraft.date}
+                            min={new Date().toISOString().split('T')[0]}
+                            max={deadlineDateMax}
+                            onChange={(e) =>
+                              setScheduleDraft((prev) => ({ ...prev, date: e.target.value }))
+                            }
+                          />
+                          <input
+                            className="form-input"
+                            type="time"
+                            id={`subtask-time-${subtask.id}`}
+                            value={scheduleDraft.time}
+                            onChange={(e) =>
+                              setScheduleDraft((prev) => ({ ...prev, time: e.target.value }))
+                            }
+                          />
+                        </div>
+                        <div className="timeline__panel-actions">
+                          <button
+                            type="button"
+                            className="btn btn-dark btn--compact timeline__panel-btn"
+                            onClick={() => saveScheduleEdit(subtask.id)}
+                          >
+                            שמור תאריך
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline btn--compact timeline__panel-btn"
+                            onClick={() => setPanelMode(null)}
+                          >
+                            ביטול
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {isExpanded && (
+                      <div className="timeline__footer">
+                        <button
+                          type="button"
+                          className="timeline__delete-link"
+                          onClick={() => {
+                            if (window.confirm('למחוק את תת-המשימה?')) {
+                              onDeleteSubtask(task.id, subtask.id);
+                            }
+                          }}
+                        >
+                          <TrashIcon />
+                          מחק תת-משימה
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+
+          <button
+            type="button"
+            className="btn btn-dark"
+            onClick={() => onApprove(task.id)}
+            disabled={task.approved}
           >
-            <span className="timeline__dot" />
-            <div
-              className={`timeline__card${subtask.status === 'active' ? ' timeline__card--active' : ''}`}
-            >
-              <button
-                type="button"
-                className="timeline__card-main timeline__card--btn"
-                onClick={() => handleStepClick(subtask)}
-              >
-                <div className="timeline__row">
-                  <span className="timeline__text">{subtask.subtask_title}</span>
-                  <span className={`timeline__badge ${badgeClass[subtask.status] || badgeClass.pending}`}>
-                    {subtask.is_done ? 'הושלם' : subtask.label}
-                  </span>
-                </div>
-                <p className="timeline__duration">
-                  📅 {formatAllocatedTime(subtask)} · ⏱ {formatDuration(subtask.durationMinutes)}
-                </p>
-                {(expandedId === subtask.id || subtask.status === 'active' || subtask.status === 'at_risk') && (
-                  <p className="timeline__description">{subtask.description}</p>
-                )}
-              </button>
-
-              {!subtask.is_done && (
-                <div className="timeline__schedule-actions">
-                  <button
-                    type="button"
-                    className="btn btn-outline btn--compact timeline__edit-date-btn"
-                    onClick={(e) => openScheduleEdit(subtask, e)}
-                  >
-                    עריכת תאריך
-                  </button>
-                </div>
-              )}
-
-              {editingScheduleId === subtask.id && !subtask.is_done && (
-                <div className="timeline__schedule-edit">
-                  <label className="form-label" htmlFor={`subtask-date-${subtask.id}`}>
-                    תאריך ושעה לביצוע
-                  </label>
-                  <div className="form-row">
-                    <input
-                      className="form-input"
-                      type="date"
-                      id={`subtask-date-${subtask.id}`}
-                      value={scheduleDraft.date}
-                      min={new Date().toISOString().split('T')[0]}
-                      max={deadlineDateMax}
-                      onChange={(e) =>
-                        setScheduleDraft((prev) => ({ ...prev, date: e.target.value }))
-                      }
-                    />
-                    <input
-                      className="form-input"
-                      type="time"
-                      id={`subtask-time-${subtask.id}`}
-                      value={scheduleDraft.time}
-                      onChange={(e) =>
-                        setScheduleDraft((prev) => ({ ...prev, time: e.target.value }))
-                      }
-                    />
-                  </div>
-                  <div className="timeline__schedule-edit-btns">
-                    <button
-                      type="button"
-                      className="btn btn-dark btn--compact"
-                      onClick={() => saveScheduleEdit(subtask.id)}
-                    >
-                      שמור תאריך
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline btn--compact"
-                      onClick={() => setEditingScheduleId(null)}
-                    >
-                      ביטול
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {expandedId === subtask.id && (
-                <div className="timeline__actions">
-                  {!subtask.is_done && (
-                    <>
-                      <button
-                        type="button"
-                        className="timeline__btn-done"
-                        onClick={() => onStepDone(task.id, subtask.id)}
-                      >
-                        הושלם
-                      </button>
-                      <button
-                        type="button"
-                        className="timeline__btn-fail"
-                        onClick={() => onStepNotDone(task.id, subtask.id)}
-                      >
-                        לא הושלם
-                      </button>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    className="timeline__btn-delete"
-                    onClick={() => {
-                      if (window.confirm('למחוק את תת-המשימה?')) {
-                        onDeleteSubtask(task.id, subtask.id);
-                      }
-                    }}
-                  >
-                    מחק תת-משימה
-                  </button>
-                </div>
-              )}
-              {(subtask.status === 'active' || subtask.status === 'at_risk') &&
-                expandedId !== subtask.id && (
-                <div className="timeline__actions">
-                  <button
-                    type="button"
-                    className="timeline__btn-done"
-                    onClick={() => onStepDone(task.id, subtask.id)}
-                  >
-                    הושלם
-                  </button>
-                  <button
-                    type="button"
-                    className="timeline__btn-fail"
-                    onClick={() => onStepNotDone(task.id, subtask.id)}
-                  >
-                    לא הושלם
-                  </button>
-                </div>
-              )}
-            </div>
-          </li>
-        ))}
-      </ol>
-
-      <button
-        type="button"
-        className="btn btn-dark"
-        onClick={() => onApprove(task.id)}
-        disabled={task.approved}
-      >
-        <CalendarPlusIcon />
-        {task.approved ? 'שובץ ביומן ✓' : 'אשר ושבץ ביומן'}
-      </button>
+            <CalendarPlusIcon />
+            {task.approved ? 'שובץ ביומן ✓' : 'אשר ושבץ ביומן'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -292,10 +373,7 @@ function TaskManagerPage() {
   const location = useLocation();
   const {
     aiTasks,
-    activeTaskIndex,
-    setActiveTaskIndex,
     markStepDone,
-    markStepNotDone,
     approveAiTaskSchedule,
     showNewTaskModal,
     setShowNewTaskModal,
@@ -303,6 +381,7 @@ function TaskManagerPage() {
     deleteAiTask,
     deleteSubtask,
     updateSubtaskSchedule,
+    updateSubtaskNotes,
     showToast,
     userCourses,
   } = useApp();
@@ -318,8 +397,6 @@ function TaskManagerPage() {
   const [aiParsed, setAiParsed] = useState(false);
   const [selectedWeekIndices, setSelectedWeekIndices] = useState([]);
   const [tipIndex, setTipIndex] = useState(0);
-  const carouselRef = useRef(null);
-  const touchStartX = useRef(0);
   const taskFileInputRef = useRef(null);
   const [fileLoading, setFileLoading] = useState(false);
   const [aiServiceLoading, setAiServiceLoading] = useState(false);
@@ -343,20 +420,6 @@ function TaskManagerPage() {
   useEffect(() => {
     setTipIndex(Math.floor(Math.random() * AI_TIPS.length));
   }, [location.key]);
-
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = (e) => {
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) < 50) return;
-    if (diff > 0 && activeTaskIndex < aiTasks.length - 1) {
-      setActiveTaskIndex(activeTaskIndex + 1);
-    } else if (diff < 0 && activeTaskIndex > 0) {
-      setActiveTaskIndex(activeTaskIndex - 1);
-    }
-  };
 
   const handleApprove = (taskId) => {
     const ok = approveAiTaskSchedule(taskId);
@@ -528,72 +591,19 @@ function TaskManagerPage() {
       </div>
 
       {aiTasks.length > 0 ? (
-        <div className="page__carousel section-reveal" ref={registerReveal}>
-          <div
-            ref={carouselRef}
-            className="ai-carousel-wrap"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div
-              className="ai-carousel-track"
-              style={{ transform: `translateX(-${activeTaskIndex * 100}%)` }}
-            >
-              {aiTasks.map((task) => (
-                <TaskSlide
-                  key={task.id}
-                  task={task}
-                  onApprove={handleApprove}
-                  onStepDone={markStepDone}
-                  onStepNotDone={markStepNotDone}
-                  onDelete={deleteAiTask}
-                  onDeleteSubtask={deleteSubtask}
-                  onUpdateSubtaskSchedule={updateSubtaskSchedule}
-                />
-              ))}
-            </div>
-          </div>
-
-          {aiTasks.length > 1 && (
-            <div className="ai-carousel__nav">
-              <button
-                type="button"
-                className="ai-carousel__arrow"
-                aria-label="משימה קודמת"
-                disabled={activeTaskIndex === 0}
-                onClick={() => setActiveTaskIndex(activeTaskIndex - 1)}
-              >
-                ›
-              </button>
-              <div className="ai-carousel__dots" aria-label="ניווט בין משימות">
-                {aiTasks.map((task, i) => (
-                  <button
-                    key={task.id}
-                    type="button"
-                    className={`ai-carousel__dot${i === activeTaskIndex ? ' ai-carousel__dot--active' : ''}`}
-                    aria-label={`משימה ${i + 1} מתוך ${aiTasks.length}`}
-                    aria-current={i === activeTaskIndex ? 'true' : undefined}
-                    onClick={() => setActiveTaskIndex(i)}
-                  />
-                ))}
-              </div>
-              <button
-                type="button"
-                className="ai-carousel__arrow"
-                aria-label="משימה הבאה"
-                disabled={activeTaskIndex === aiTasks.length - 1}
-                onClick={() => setActiveTaskIndex(activeTaskIndex + 1)}
-              >
-                ‹
-              </button>
-            </div>
-          )}
-
-          {aiTasks.length === 1 && (
-            <div className="ai-carousel__dots ai-carousel__dots--single" aria-hidden>
-              <span className="ai-carousel__dot ai-carousel__dot--active" />
-            </div>
-          )}
+        <div className="tasks-list section-reveal" ref={registerReveal}>
+          {aiTasks.map((task) => (
+            <TaskAccordion
+              key={task.id}
+              task={task}
+              onApprove={handleApprove}
+              onStepDone={markStepDone}
+              onDelete={deleteAiTask}
+              onDeleteSubtask={deleteSubtask}
+              onUpdateSubtaskSchedule={updateSubtaskSchedule}
+              onUpdateSubtaskNotes={updateSubtaskNotes}
+            />
+          ))}
         </div>
       ) : (
         <p className="page-subtitle page__empty">אין משימות AI — לחצי + משימה חדשה</p>
